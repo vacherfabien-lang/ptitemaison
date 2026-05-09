@@ -1,0 +1,2691 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>La ptite maison · Saint-Léry</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --brique:      #c9a84c;
+  --brique-dark: #8b6235;
+  --torii:       #b02020;
+  --torii-dark:  #7a1515;
+  --torii-pale:  rgba(176,32,32,.08);
+  --vert-fonce:  #2d4a28;
+  --vert-moyen:  #4a7040;
+  --vert-clair:  #7aab5a;
+  --fleur:       #d4640a;
+  --ardoise:     #3a3d42;
+  --fond:        #f3ede0;
+  --fond-chaud:  #faf5e8;
+  --pierre:      #e8e0cc;
+  --pierre-dark: #d5cab0;
+  --ink:         #1e1a12;
+  --ink-soft:    #3d3020;
+  --muted:       #7a6a50;
+  --line:        rgba(30,26,18,.11);
+  --line-strong: rgba(30,26,18,.2);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{overflow-x:hidden}
+body{font-family:'Jost',system-ui,sans-serif;background:var(--fond);color:var(--ink);line-height:1.55;min-height:100vh;padding-top:env(safe-area-inset-top);background-image:radial-gradient(ellipse 90% 30% at -5% 0%,rgba(201,168,76,.14),transparent 55%),radial-gradient(ellipse 60% 50% at 105% 100%,rgba(45,74,40,.09),transparent 60%)}
+
+/* ── HEADER ── */
+.sticky-header{position:sticky;top:0;z-index:50;background:var(--fond);border-bottom:2px solid var(--brique);transition:box-shadow .2s}
+.sticky-header.scrolled{box-shadow:0 3px 20px rgba(30,26,18,.12)}
+.header-inner{max-width:1100px;margin:0 auto;padding:1rem 1.1rem .45rem;text-align:center;position:relative}
+.header-torii{display:flex;align-items:center;justify-content:center;gap:.8rem;margin-bottom:.25rem}
+.torii-svg{width:22px;height:18px;flex-shrink:0;opacity:.75}
+.header-eyebrow{font-size:.55rem;letter-spacing:.42em;text-transform:uppercase;color:var(--brique-dark);font-weight:500}
+.site-title{font-family:'Cormorant Garamond',serif;font-weight:500;font-style:italic;font-size:clamp(2rem,8vw,3.5rem);color:var(--ink);line-height:1;letter-spacing:.01em;text-decoration:underline;text-decoration-color:var(--torii);text-decoration-thickness:2px;text-underline-offset:6px}
+.site-tagline{font-size:.63rem;color:var(--muted);margin-top:.28rem;letter-spacing:.09em}
+.tabs-main{display:flex;justify-content:center;gap:.3rem;padding:.48rem 1rem .5rem;max-width:1100px;margin:0 auto;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab-main{background:none;border:1.5px solid transparent;padding:.35rem .95rem;border-radius:100px;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.98rem;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.tab-main.active{color:var(--torii);border-color:var(--torii);background:var(--torii-pale)}
+.tab-main:active{transform:scale(.97)}
+
+/* ── VUES ── */
+.view{max-width:1100px;margin:.65rem auto;padding:0 .85rem 5rem;display:none}
+.view.active{display:block}
+
+/* ── BOUTONS ── */
+.btn-add{background:var(--torii);color:white;border:none;padding:.5rem .95rem;font-size:.79rem;font-weight:500;cursor:pointer;border-radius:4px;display:inline-flex;align-items:center;gap:.38rem;font-family:'Jost',sans-serif;transition:background .14s;letter-spacing:.01em}
+.btn-add:hover{background:var(--torii-dark)}
+.btn-add:active{transform:scale(.97)}
+.btn-sm{background:none;border:1px solid var(--line-strong);padding:.3rem .7rem;font-size:.72rem;border-radius:4px;cursor:pointer;color:var(--ink-soft);font-family:'Jost',sans-serif;transition:all .12s}
+.btn-sm:hover{border-color:var(--torii);color:var(--torii)}
+
+/* ── PLANNING ── */
+.plan-toolbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:.8rem}
+.plan-status{font-size:.72rem;color:var(--muted);font-style:italic}
+.select-hint{position:sticky;top:0;z-index:60;background:var(--torii);color:white;display:none;align-items:center;justify-content:space-between;gap:.6rem;padding:.5rem .9rem;box-shadow:0 2px 12px rgba(176,32,32,.35);animation:slideDown .22s ease}
+.select-hint.show{display:flex}
+.sh-step{background:rgba(255,255,255,.2);color:white;font-size:.58rem;font-weight:700;letter-spacing:.08em;padding:.14rem .48rem;border-radius:100px;flex-shrink:0}
+.sh-msg{flex:1;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.95rem}
+.sh-msg .sh-date{display:inline-block;background:rgba(255,255,255,.95);color:var(--torii);font-family:'Jost',sans-serif;font-style:normal;font-weight:600;padding:.04rem .38rem;border-radius:3px;margin-left:.3rem;font-size:.78rem}
+.sh-cancel{background:rgba(0,0,0,.18);color:white;border:none;padding:.28rem .65rem;border-radius:3px;font-size:.7rem;font-weight:600;cursor:pointer;font-family:'Jost',sans-serif}
+@keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+.plan-nav{display:flex;justify-content:center;align-items:center;gap:.9rem;margin-bottom:.85rem}
+.nav-btn{background:none;border:1px solid var(--line-strong);width:31px;height:31px;border-radius:50%;cursor:pointer;font-size:1.05rem;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;transition:all .13s}
+.nav-btn:active{background:var(--torii);color:white;border-color:var(--torii)}
+.year-lbl{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.35rem;min-width:76px;text-align:center;color:var(--ink)}
+.year-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(278px,1fr));gap:.85rem}
+.month-card{background:var(--fond-chaud);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.month-header{display:flex;justify-content:space-between;align-items:baseline;padding:.48rem .72rem .38rem;background:var(--pierre);border-bottom:1px solid var(--line-strong)}
+.month-name{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:.96rem;color:var(--ink);text-transform:capitalize}
+.month-nights{font-size:.6rem;color:var(--muted);font-style:italic}
+.cal-head{display:grid;grid-template-columns:repeat(7,1fr);background:var(--pierre-dark);border-bottom:1px solid var(--line)}
+.cal-head-cell{font-size:.5rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-align:center;padding:.26rem .1rem;border-right:1px solid var(--line)}
+.cal-head-cell:last-child{border-right:none}
+.cal-body-wrap{position:relative}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:34px}
+.cal-cell{position:relative;background:white;cursor:pointer;user-select:none;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:3px 4px;transition:background .08s}
+.cal-cell:nth-child(7n){border-right:none}
+.cal-cell.empty{background:rgba(0,0,0,.013);cursor:default;pointer-events:none}
+.cal-cell.today .day-num{color:var(--torii);font-weight:800}
+.cal-cell.sel-start{background:rgba(176,32,32,.14)!important}
+.cal-cell.sel-range{background:rgba(176,32,32,.05)!important}
+.day-num{font-size:.58rem;color:var(--muted);font-weight:500;line-height:1;opacity:.8}
+.cal-bands{position:absolute;inset:0;pointer-events:none}
+.cal-band{position:absolute;height:16px;border-radius:3px;display:flex;align-items:center;justify-content:center;padding:0 5px;color:white;font-size:.57rem;font-weight:600;pointer-events:auto;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.13);transition:transform .1s,box-shadow .1s}
+.cal-band:hover{transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.cal-band-continues-left{border-top-left-radius:0;border-bottom-left-radius:0}
+.cal-band-continues-right{border-top-right-radius:0;border-bottom-right-radius:0}
+.plan-legend{margin-top:.9rem;padding:.65rem .9rem;background:var(--fond-chaud);border:1px solid var(--line);border-radius:5px;display:flex;flex-wrap:wrap;gap:.35rem .75rem}
+.legend-item{display:flex;align-items:center;gap:.32rem;font-size:.69rem;color:var(--ink-soft);cursor:pointer}
+.legend-item:hover span{text-decoration:underline;color:var(--torii)}
+.legend-dot{width:20px;height:9px;border-radius:2px;flex-shrink:0}
+
+/* ══════════════════════════════════════
+   PANNEAU SÉJOUR — glisse depuis la droite
+══════════════════════════════════════ */
+.sejour-panel-backdrop{display:none;position:fixed;inset:0;background:rgba(30,26,18,.4);z-index:80;backdrop-filter:blur(2px)}
+.sejour-panel-backdrop.show{display:block}
+.sejour-panel{position:fixed;top:0;right:0;bottom:0;width:min(520px,100vw);background:var(--fond);z-index:81;transform:translateX(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);overflow-y:auto;display:flex;flex-direction:column}
+.sejour-panel.show{transform:translateX(0)}
+
+.sp-header{padding:1.2rem 1.1rem .9rem;border-bottom:2px solid var(--brique);position:sticky;top:0;background:var(--fond);z-index:2}
+.sp-close{position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--muted);line-height:1;padding:.2rem}
+.sp-close:hover{color:var(--torii)}
+.sp-dates{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.5rem;color:var(--ink);line-height:1.1;margin-bottom:.2rem;padding-right:2rem}
+.sp-meta{font-size:.72rem;color:var(--muted);display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+.sp-qui{font-weight:600;color:var(--ink-soft)}
+.sp-nights-badge{background:var(--torii);color:white;font-size:.62rem;font-weight:700;padding:.12rem .48rem;border-radius:100px}
+.sp-edit-btn{background:none;border:1px solid var(--line-strong);padding:.18rem .6rem;border-radius:100px;font-size:.65rem;color:var(--muted);cursor:pointer;font-family:'Jost',sans-serif;transition:all .12s}
+.sp-edit-btn:hover{border-color:var(--torii);color:var(--torii)}
+
+.sp-body{padding:.9rem 1.1rem 2rem;flex:1}
+
+/* Sous-sections du panneau */
+.sp-section{margin-bottom:1.5rem}
+.sp-section-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.08rem;color:var(--ink);margin-bottom:.7rem;display:flex;align-items:center;gap:.5rem;border-bottom:1px solid var(--line);padding-bottom:.4rem}
+.sp-section-action{font-size:.65rem;font-weight:500;color:var(--torii);cursor:pointer;background:none;border:none;font-family:'Jost',sans-serif;padding:0;white-space:nowrap}
+.sp-section-action:hover{text-decoration:underline}
+.sp-empty{font-size:.8rem;color:var(--muted);font-style:italic;padding:.4rem 0}
+
+/* Moments liés */
+.sp-moment{background:var(--fond-chaud);border:1px solid var(--line);border-left:3px solid var(--torii);border-radius:5px;padding:.62rem .82rem;margin-bottom:.4rem;cursor:pointer;transition:all .12s}
+.sp-moment:hover{box-shadow:0 2px 8px rgba(30,26,18,.08);transform:translateY(-1px)}
+.sp-moment-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.98rem;color:var(--ink)}
+.sp-moment-meta{font-size:.68rem;color:var(--muted);margin-top:.1rem}
+.sp-moment-tags{display:flex;gap:.25rem;flex-wrap:wrap;margin-top:.3rem}
+.sp-moment-tag{font-size:.55rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:.1rem .38rem;border-radius:100px}
+
+/* Travaux liés */
+.sp-travail{background:var(--fond-chaud);border:1px solid var(--line);border-left:3px solid var(--pierre-dark);border-radius:4px;padding:.55rem .78rem;margin-bottom:.35rem;cursor:pointer;display:flex;align-items:center;gap:.6rem;transition:all .12s}
+.sp-travail:hover{box-shadow:0 2px 6px rgba(30,26,18,.07)}
+.sp-travail-title{font-size:.85rem;font-weight:500;color:var(--ink);flex:1}
+.sp-travail.termine .sp-travail-title{text-decoration:line-through;color:var(--muted)}
+.sp-travail-stat{font-size:.6rem;font-weight:700;text-transform:uppercase;padding:.1rem .38rem;border-radius:100px}
+.stat-encours{background:rgba(201,168,76,.2);color:var(--brique-dark)}
+.stat-afaire{background:rgba(30,26,18,.07);color:var(--muted)}
+.stat-ok{background:rgba(74,112,64,.15);color:var(--vert-moyen)}
+
+/* ══════════════════
+   CHECKLIST ARRIVÉE / DÉPART
+══════════════════ */
+.checklist-tabs{display:flex;gap:.3rem;margin-bottom:.7rem}
+.cl-tab{background:none;border:1px solid var(--line-strong);padding:.26rem .72rem;border-radius:100px;font-size:.72rem;color:var(--muted);cursor:pointer;font-family:'Jost',sans-serif;transition:all .12s}
+.cl-tab.active{background:var(--vert-moyen);color:white;border-color:var(--vert-moyen)}
+
+.checklist-list{list-style:none;margin-bottom:.6rem}
+.cl-item{display:flex;align-items:center;gap:.6rem;padding:.42rem .1rem;border-bottom:1px solid var(--line)}
+.cl-item:last-child{border-bottom:none}
+.cl-checkbox{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--line-strong);background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:.68rem;transition:all .14s}
+.cl-checkbox.checked{background:var(--vert-moyen);border-color:var(--vert-moyen);color:white}
+.cl-label{font-size:.83rem;color:var(--ink);flex:1;line-height:1.3}
+.cl-item.checked-item .cl-label{text-decoration:line-through;color:var(--muted)}
+.cl-del-btn{background:none;border:none;color:var(--muted);font-size:.9rem;cursor:pointer;opacity:.3;padding:.1rem;line-height:1}
+.cl-del-btn:hover{opacity:1;color:var(--torii)}
+
+.cl-add-row{display:flex;gap:.4rem;margin-top:.5rem}
+.cl-add-input{flex:1;padding:.42rem .65rem;border:1px solid var(--line-strong);border-radius:4px;font-family:'Jost',sans-serif;font-size:.83rem;background:white;color:var(--ink)}
+.cl-add-input:focus{outline:none;border-color:var(--vert-moyen)}
+.cl-add-btn{background:var(--vert-moyen);color:white;border:none;padding:.42rem .8rem;border-radius:4px;cursor:pointer;font-size:.8rem;font-weight:600;font-family:'Jost',sans-serif;transition:background .13s}
+.cl-add-btn:hover{background:var(--vert-fonce)}
+
+.cl-progress{height:4px;background:var(--pierre);border-radius:100px;margin-bottom:.65rem;overflow:hidden}
+.cl-progress-bar{height:100%;border-radius:100px;background:var(--vert-moyen);transition:width .3s ease}
+
+.cl-reset-btn{font-size:.65rem;color:var(--muted);background:none;border:none;cursor:pointer;font-family:'Jost',sans-serif;text-decoration:underline}
+.cl-reset-btn:hover{color:var(--torii)}
+
+/* ══════════════════════════════
+   GANTT JARDIN
+══════════════════════════════ */
+.gantt-legend{display:flex;flex-wrap:wrap;gap:.3rem .75rem;margin-bottom:.75rem}
+.gantt-legend-item{display:flex;align-items:center;gap:.3rem;font-size:.68rem;color:var(--ink-soft)}
+.gantt-legend-dot{width:11px;height:11px;border-radius:2px;flex-shrink:0}
+
+/* Conteneur global */
+.gantt-wrap{border:1px solid var(--line);border-radius:7px;background:var(--fond-chaud);overflow:hidden}
+
+/* En-tête mois — sticky */
+.gantt-header{display:grid;grid-template-columns:repeat(12,1fr);background:var(--pierre);border-bottom:2px solid var(--line-strong);position:sticky;top:0;z-index:3}
+.gantt-month-hd{text-align:center;padding:.42rem .1rem;font-size:.56rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-right:1px solid var(--line);position:relative}
+.gantt-month-hd:last-child{border-right:none}
+.gantt-month-hd.current-m{color:var(--torii);font-weight:800}
+.gantt-month-hd.current-m::after{content:'';position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--torii)}
+
+/* Groupe catégorie */
+.gantt-group{border-bottom:3px solid var(--pierre-dark)}
+.gantt-group:last-child{border-bottom:none}
+.gantt-group-header{
+  display:flex;align-items:center;gap:.45rem;
+  padding:.32rem .75rem;
+  background:var(--pierre-dark);
+  border-bottom:1px solid var(--line);
+  cursor:pointer;user-select:none;
+  position:sticky;top:34px;z-index:2; /* colle sous l'en-tête mois */
+}
+.gantt-group-icon{font-size:.85rem;line-height:1}
+.gantt-group-name{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.9rem;color:var(--ink);flex:1}
+.gantt-group-count{font-size:.58rem;color:var(--muted)}
+.gantt-group-toggle{font-size:.7rem;color:var(--muted);transition:transform .18s}
+.gantt-group.collapsed .gantt-group-toggle{transform:rotate(-90deg)}
+.gantt-group-rows{overflow:hidden}
+.gantt-group.collapsed .gantt-group-rows{display:none}
+
+/* Chaque ligne = une "piste" contenant plusieurs barres superposées */
+.gantt-lane{
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  border-bottom:1px solid var(--line);
+  padding:0; /* hauteur gérée en JS avec LANE_PAD */
+}
+.gantt-lane:last-child{border-bottom:none}
+.gantt-lane:hover{background:rgba(30,26,18,.018)}
+
+/* Cellules de fond (grille verticale) */
+.gantt-cell{border-right:1px solid var(--line);pointer-events:none}
+.gantt-cell:last-child{border-right:none}
+.gantt-cell.current-m-col{background:rgba(176,32,32,.04)}
+
+/* Couche des barres par-dessus la grille */
+.gantt-bars-layer{
+  position:absolute;inset:0;
+  pointer-events:none; /* les barres capturent elles-mêmes */
+}
+
+/* Barre individuelle — texte sur 2 lignes max */
+.gantt-bar{
+  position:absolute;
+  border-radius:4px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:3px 7px;
+  font-size:.58rem;font-weight:600;color:white;
+  white-space:normal;
+  overflow:hidden;
+  line-height:1.25;
+  text-align:center;
+  word-break:break-word;
+  box-shadow:0 1px 3px rgba(0,0,0,.18);
+  cursor:pointer;pointer-events:auto;
+  transition:filter .12s,box-shadow .12s;
+}
+.gantt-bar:hover{filter:brightness(1.12);box-shadow:0 2px 8px rgba(0,0,0,.25)}
+
+/* Trait vertical mois courant */
+.gantt-now-line{
+  position:absolute;top:0;bottom:0;width:2px;
+  background:var(--torii);opacity:.3;
+  pointer-events:none;z-index:2;
+}
+
+@media(max-width:600px){
+  .gantt-month-hd{font-size:.48rem;padding:.36rem .05rem;letter-spacing:.02em}
+  .gantt-bar{font-size:.52rem;padding:0 3px}
+}
+
+/* ── ÉVÉNEMENTS LOCAUX sur calendrier ── */
+.cal-event{
+  position:absolute;
+  height:14px;border-radius:3px;
+  display:flex;align-items:center;padding:0 4px;
+  font-size:.5rem;font-weight:700;color:white;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  pointer-events:auto;cursor:pointer;z-index:3;
+  box-shadow:0 1px 3px rgba(0,0,0,.2);
+  transition:filter .12s;
+}
+.cal-event:hover{filter:brightness(1.15)}
+.event-dot{
+  display:inline-block;width:7px;height:7px;border-radius:50%;
+  flex-shrink:0;margin-right:3px;
+}
+
+/* ── PLAN DE LA MAISON ── */
+.plan-section{margin-top:.5rem}
+.house-plan-wrap{width:100%;border-radius:8px;overflow:hidden;border:1px solid var(--line);box-shadow:0 2px 12px rgba(30,26,18,.08)}
+.house-plan{position:relative;width:100%;background:#f8f4ec;cursor:default}
+.house-plan.edit-mode{cursor:crosshair}
+
+/* Épingles */
+.plan-pin{
+  position:absolute;transform:translate(-50%,-100%);
+  display:flex;flex-direction:column;align-items:center;
+  cursor:pointer;z-index:10;transition:transform .15s;
+}
+.plan-pin:hover{transform:translate(-50%,-100%) scale(1.12)}
+.house-plan.edit-mode .plan-pin{cursor:grab}
+.house-plan.edit-mode .plan-pin:active{cursor:grabbing;transform:translate(-50%,-100%) scale(1.18)}
+.plan-pin-bubble{
+  background:white;border:2.5px solid var(--torii);border-radius:50%;
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  font-size:1rem;box-shadow:0 2px 8px rgba(0,0,0,.25);
+}
+.plan-pin-bubble.pcat-eau  {border-color:#3a7fa5}
+.plan-pin-bubble.pcat-elec {border-color:#c9a84c}
+.plan-pin-bubble.pcat-gaz  {border-color:#b02020}
+.plan-pin-bubble.pcat-info {border-color:#4a7040}
+.plan-pin-tail{width:2px;height:10px;background:var(--torii);margin-top:-1px}
+.plan-pin-tail.pcat-eau  {background:#3a7fa5}
+.plan-pin-tail.pcat-elec {background:#c9a84c}
+.plan-pin-tail.pcat-gaz  {background:#b02020}
+.plan-pin-tail.pcat-info {background:#4a7040}
+
+/* Label permanent sous la bulle */
+.plan-pin-label{
+  position:absolute;
+  top:calc(100% + 12px);
+  left:50%;transform:translateX(-50%);
+  background:rgba(30,26,18,.82);
+  color:white;
+  padding:.18rem .5rem;
+  border-radius:4px;
+  font-size:.62rem;font-weight:600;
+  font-family:'Jost',sans-serif;
+  white-space:nowrap;
+  pointer-events:none;
+  max-width:120px;
+  white-space:normal;
+  text-align:center;
+  line-height:1.3;
+  box-shadow:0 1px 4px rgba(0,0,0,.3);
+  z-index:20;
+}
+
+/* ── CHECKLIST STANDALONE ── */
+.check-cols{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+@media(max-width:600px){.check-cols{grid-template-columns:1fr}}
+.check-col{background:var(--fond-chaud);border:1px solid var(--line);border-radius:8px;padding:.85rem 1rem 1rem}
+.check-col-header{margin-bottom:.7rem}
+.check-col-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.15rem;color:var(--ink)}
+.check-progress-txt{font-size:.65rem;color:var(--muted);margin-top:.25rem;font-style:italic}
+
+/* item en mode normal */
+.cl-item{display:flex;align-items:flex-start;gap:.55rem;padding:.42rem .1rem;border-bottom:1px solid var(--line);list-style:none}
+.cl-item:last-child{border-bottom:none}
+.cl-item-body{flex:1;min-width:0}
+.cl-item-label{font-size:.84rem;color:var(--ink);line-height:1.35}
+.cl-item-photo{
+  width:100%;max-height:140px;object-fit:cover;
+  border-radius:5px;margin-top:.35rem;
+  cursor:zoom-in;
+}
+
+/* boutons mode édition */
+.cl-reorder-btns{display:flex;flex-direction:column;gap:1px;flex-shrink:0}
+.cl-reorder-btn{background:none;border:1px solid var(--line);border-radius:3px;width:20px;height:20px;font-size:.7rem;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center;padding:0}
+.cl-reorder-btn:hover{background:var(--pierre);color:var(--ink)}
+.cl-edit-actions{display:flex;gap:.3rem;flex-shrink:0}
+.cl-photo-btn{background:none;border:1px solid var(--vert-moyen);border-radius:4px;padding:.1rem .35rem;font-size:.65rem;color:var(--vert-moyen);cursor:pointer}
+.cl-photo-btn:hover{background:var(--vert-moyen);color:white}
+
+/* ── LE COIN ── */
+.coin-legend{display:flex;flex-wrap:wrap;gap:.3rem .7rem;margin-bottom:.75rem}
+.coin-legend-item{display:flex;align-items:center;gap:.3rem;font-size:.69rem;color:var(--ink-soft)}
+.coin-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+.coin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:.75rem}
+.poi-card{
+  background:var(--fond-chaud);border:1px solid var(--line);border-radius:7px;
+  padding:.75rem .9rem;cursor:pointer;transition:all .13s;
+  display:flex;gap:.65rem;align-items:flex-start;
+}
+.poi-card:hover{box-shadow:0 3px 12px rgba(30,26,18,.1);transform:translateY(-1px)}
+.poi-icon{font-size:1.4rem;flex-shrink:0;line-height:1;margin-top:1px}
+.poi-body{flex:1;min-width:0}
+.poi-name{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1rem;color:var(--ink);line-height:1.2}
+.poi-desc{font-size:.74rem;color:var(--muted);margin-top:.2rem;line-height:1.4}
+.poi-cat{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-top:.3rem;color:var(--brique-dark)}
+
+@media(max-width:540px){.coin-grid{grid-template-columns:1fr}}
+.fil-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.1rem;flex-wrap:wrap;gap:.5rem}
+.section-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.45rem;color:var(--ink)}
+.timeline{position:relative}
+.tl-year{display:flex;align-items:center;gap:.7rem;margin:1.3rem 0 .85rem}
+.tl-year-label{font-family:'Cormorant Garamond',serif;font-size:.98rem;font-style:italic;color:var(--muted);white-space:nowrap}
+.tl-year-line{flex:1;height:1px;background:var(--line-strong)}
+.tl-entry{display:grid;grid-template-columns:82px 1fr;gap:0 1rem;margin-bottom:1.25rem;cursor:pointer}
+.te-date{text-align:right;padding-top:.38rem;font-size:.67rem;color:var(--muted);line-height:1.4}
+.te-date strong{display:block;font-size:.84rem;color:var(--brique-dark);font-weight:600}
+.te-right{position:relative}
+.te-right::before{content:'';position:absolute;left:-1.02rem;top:.62rem;width:9px;height:9px;border-radius:50%;background:var(--torii);border:2px solid var(--fond);box-shadow:0 0 0 1.5px var(--torii)}
+.te-right::after{content:'';position:absolute;left:-.98rem;top:1.3rem;width:1px;bottom:-1.25rem;background:linear-gradient(to bottom,var(--torii),transparent)}
+.tl-entry:last-child .te-right::after{display:none}
+.entry-card{background:var(--fond-chaud);border:1px solid var(--line);border-radius:7px;overflow:hidden;transition:box-shadow .14s,transform .14s}
+.entry-card:hover{box-shadow:0 4px 20px rgba(30,26,18,.1);transform:translateY(-1px)}
+.entry-band{height:3px;background:var(--torii)}
+.entry-band.jardin{background:var(--vert-moyen)}
+.entry-band.bricolage{background:var(--brique)}
+.entry-band.convivial{background:var(--fleur)}
+.entry-band.maison{background:var(--ardoise)}
+.entry-photos{display:flex;gap:2px;height:150px;overflow:hidden}
+.entry-photo{flex:1;background:var(--pierre-dark) center/cover no-repeat;min-width:0;position:relative;display:flex;align-items:center;justify-content:center;color:rgba(30,26,18,.18);font-size:1.8rem}
+.entry-more{position:absolute;bottom:.3rem;right:.35rem;background:rgba(0,0,0,.52);color:white;font-size:.56rem;font-weight:700;padding:.1rem .33rem;border-radius:2px}
+.entry-body{padding:.68rem .88rem .78rem}
+.entry-tags{display:flex;gap:.28rem;flex-wrap:wrap;margin-bottom:.38rem}
+.entry-tag{font-size:.57rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:.12rem .45rem;border-radius:100px}
+.tag-jardin{background:rgba(74,112,64,.13);color:var(--vert-fonce)}
+.tag-bricolage{background:rgba(201,168,76,.18);color:var(--brique-dark)}
+.tag-maison{background:rgba(58,61,66,.1);color:var(--ardoise)}
+.tag-convivial{background:rgba(212,100,10,.12);color:var(--fleur)}
+.entry-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.08rem;color:var(--ink);margin-bottom:.26rem;line-height:1.22}
+.entry-comment{font-size:.81rem;color:var(--ink-soft);line-height:1.5}
+.entry-footer{margin-top:.48rem;display:flex;align-items:center;gap:.38rem;flex-wrap:wrap}
+.entry-who{font-size:.6rem;color:var(--muted);background:var(--pierre);border-radius:100px;padding:.09rem .42rem;border:1px solid var(--line-strong);font-weight:500}
+.entry-duree{font-size:.6rem;color:var(--muted);font-style:italic}
+
+/* ── TRAVAUX ── */
+.travaux-filters{display:flex;gap:.33rem;flex-wrap:wrap;margin-bottom:.95rem}
+.filter-chip{background:var(--fond-chaud);border:1px solid var(--line-strong);padding:.2rem .62rem;border-radius:100px;font-size:.71rem;cursor:pointer;color:var(--ink-soft);transition:all .12s;font-family:'Jost',sans-serif}
+.filter-chip.active{background:var(--ink);color:var(--fond);border-color:var(--ink)}
+.travaux-cols{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:640px){.travaux-cols{grid-template-columns:1fr}}
+.tcol-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:.62rem}
+.tcol-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.05rem;color:var(--ink);display:flex;align-items:center;gap:.4rem}
+.tcol-count{background:var(--pierre);color:var(--muted);font-size:.59rem;font-weight:700;padding:.09rem .4rem;border-radius:100px;font-family:'Jost',sans-serif;font-style:normal}
+.travail-item{background:var(--fond-chaud);border:1px solid var(--line);border-left:3px solid var(--pierre-dark);border-radius:5px;padding:.6rem .8rem;margin-bottom:.38rem;cursor:pointer;display:flex;align-items:flex-start;gap:.58rem;transition:all .12s}
+.travail-item:hover{border-left-color:var(--vert-moyen);box-shadow:0 2px 8px rgba(30,26,18,.07)}
+.travail-item.en-cours{border-left-color:var(--brique);background:rgba(201,168,76,.04)}
+.travail-item.termine{border-left-color:var(--vert-moyen);opacity:.55}
+.t-check{width:17px;height:17px;border-radius:4px;flex-shrink:0;border:1.5px solid var(--line-strong);background:white;display:flex;align-items:center;justify-content:center;margin-top:2px;cursor:pointer;transition:all .14s;font-size:.68rem}
+.t-check.done{background:var(--vert-moyen);border-color:var(--vert-moyen);color:white}
+.t-check.wip{background:rgba(201,168,76,.18);border-color:var(--brique)}
+.t-body{flex:1;min-width:0}
+.t-title{font-size:.89rem;font-weight:500;color:var(--ink);line-height:1.3}
+.travail-item.termine .t-title{text-decoration:line-through;color:var(--muted)}
+.t-detail{font-size:.71rem;color:var(--muted);margin-top:.11rem;font-style:italic}
+.t-meta{margin-top:.2rem;display:flex;gap:.32rem;flex-wrap:wrap}
+.t-badge{font-size:.57rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:.09rem .36rem;border-radius:3px}
+.t-urgent{background:rgba(176,32,32,.1);color:var(--torii)}
+.t-encours{background:rgba(201,168,76,.2);color:var(--brique-dark)}
+.t-del{background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;padding:.08rem .12rem;opacity:.3;line-height:1;flex-shrink:0}
+.t-del:hover{opacity:1;color:var(--torii)}
+.travaux-empty{text-align:center;padding:1.8rem .5rem;color:var(--muted);font-style:italic;font-size:.84rem}
+
+/* ── MODALS ── */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(30,26,18,.48);z-index:100;align-items:flex-end;justify-content:center;backdrop-filter:blur(3px)}
+.modal-backdrop.show{display:flex}
+.modal{background:var(--fond-chaud);border-radius:12px 12px 0 0;max-width:520px;width:100%;padding:1.3rem 1.2rem 1.35rem;max-height:93vh;overflow-y:auto;box-shadow:0 -10px 40px rgba(30,26,18,.22);animation:slideUp .24s ease;border-top:3px solid var(--torii)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@media(min-width:600px){
+  .modal-backdrop{align-items:center}
+  .modal{border-radius:10px;max-height:90vh}
+  @keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+}
+.modal-handle{width:34px;height:3px;background:var(--line-strong);border-radius:100px;margin:-.3rem auto .85rem}
+@media(min-width:600px){.modal-handle{display:none}}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:1.22rem;font-style:italic;color:var(--ink);margin-bottom:.88rem;padding-bottom:.52rem;border-bottom:1px solid var(--line)}
+.form-group{margin-bottom:.75rem}
+.form-label{display:block;font-size:.57rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:.24rem;font-weight:600}
+.form-control{width:100%;padding:.58rem .7rem;border:1px solid var(--line-strong);background:white;border-radius:4px;font-family:'Jost',sans-serif;font-size:.89rem;color:var(--ink);appearance:none}
+.form-control:focus{outline:none;border-color:var(--torii)}
+textarea.form-control{resize:vertical;min-height:66px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.58rem}
+.modal-sejour-info{font-size:.79rem;color:var(--muted);margin-bottom:.82rem;padding:.4rem .62rem;background:var(--pierre);border-radius:4px;font-style:italic}
+.participants-hint{font-size:.68rem;color:var(--muted);font-style:italic;margin-top:.18rem}
+.modal-actions{display:flex;gap:.4rem;justify-content:flex-end;margin-top:.95rem;padding-top:.78rem;border-top:1px solid var(--line)}
+.btn{padding:.56rem .92rem;font-size:.79rem;font-weight:500;border-radius:4px;cursor:pointer;border:none;font-family:'Jost',sans-serif;transition:all .14s}
+.btn-primary{background:var(--torii);color:white}
+.btn-primary:hover{background:var(--torii-dark)}
+.btn-secondary{background:none;color:var(--ink-soft);border:1px solid var(--line-strong)}
+.btn-danger{background:none;color:var(--torii);border:1px solid var(--torii);margin-right:auto}
+.toggle-list{display:flex;gap:.32rem;flex-wrap:wrap}
+.toggle-pill{padding:.23rem .68rem;border-radius:100px;border:1.5px solid var(--line-strong);background:white;font-size:.74rem;color:var(--ink-soft);cursor:pointer;font-family:'Jost',sans-serif;transition:all .12s}
+.toggle-pill.on{background:var(--vert-moyen);color:white;border-color:var(--vert-moyen)}
+.photos-row{display:flex;gap:.36rem;flex-wrap:wrap;margin-top:.32rem}
+.photo-thumb{width:66px;height:66px;border-radius:5px;overflow:hidden;border:1px solid var(--line);background:var(--pierre-dark) center/cover no-repeat;position:relative;flex-shrink:0}
+.photo-del{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.55);color:white;border:none;cursor:pointer;border-radius:50%;width:16px;height:16px;font-size:.62rem;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
+.photo-add-btn{width:66px;height:66px;border:1.5px dashed var(--line-strong);border-radius:5px;background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.35rem;color:var(--muted);transition:all .14s}
+.photo-add-btn:hover{border-color:var(--torii);color:var(--torii)}
+.lightbox{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.93);align-items:center;justify-content:center;padding:1rem;cursor:zoom-out}
+.lightbox.show{display:flex}
+.lightbox img{max-width:100%;max-height:100%;object-fit:contain;border-radius:4px}
+.lightbox-close{position:absolute;top:1rem;right:1rem;background:rgba(255,255,255,.12);color:white;border:none;width:34px;height:34px;border-radius:50%;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(130px);background:var(--ink);color:var(--fond);padding:.6rem 1.15rem;border-radius:4px;font-size:.8rem;z-index:400;transition:transform .28s;box-shadow:0 6px 22px rgba(0,0,0,.25);pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.empty-state{text-align:center;padding:2.5rem 1rem;color:var(--muted)}
+.empty-icon{font-size:2.1rem;opacity:.28;margin-bottom:.45rem}
+.empty-label{font-size:.86rem;font-style:italic}
+
+@media(max-width:720px){
+  .year-grid{grid-template-columns:repeat(2,1fr);gap:.5rem}
+  .cal-grid{grid-auto-rows:29px}
+  .cal-cell{padding:2px 3px}
+  .day-num{font-size:.56rem}
+  .cal-band{font-size:.5rem;padding:0 2px;height:15px}
+  .cal-head-cell{font-size:.48rem;padding:.22rem .05rem}
+}
+@media(max-width:540px){
+  .year-grid{grid-template-columns:repeat(2,1fr)}
+  .site-title{font-size:2rem}
+  .tab-main{font-size:.9rem;padding:.33rem .75rem}
+  .tl-entry{grid-template-columns:66px 1fr;gap:0 .68rem}
+  .te-date{font-size:.63rem}
+  .te-date strong{font-size:.78rem}
+  .form-control,input.form-control,textarea.form-control,select.form-control{font-size:16px}
+  .entry-photos{height:118px}
+  .form-row{grid-template-columns:1fr}
+  .sejour-panel{width:100vw}
+  .jardin-strip{gap:2px}
+  .js-month-name{font-size:.42rem}
+}
+@media(max-width:420px){
+  .cal-grid{grid-auto-rows:25px}
+  .day-num{font-size:.52rem}
+  .cal-band{height:13px;font-size:.45rem}
+}
+
+/* ── IMPRESSION GANTT ── */
+@media print{
+  /* Masquer tout sauf le gantt */
+  .sticky-header, .fil-toolbar, .lightbox, .toast,
+  .modal-backdrop, .sejour-panel, .sejour-panel-backdrop,
+  #carteZoomBackdrop { display:none !important; }
+
+  body { background:white !important; padding:0; margin:0; }
+
+  .view { display:none !important; max-width:100% !important; padding:0 !important; margin:0 !important; }
+  #view-jardin { display:block !important; }
+
+  .gantt-wrap { border:none !important; box-shadow:none !important; }
+  .gantt-group-header { position:static !important; }
+  .gantt-header { position:static !important; }
+
+  /* Titre + date d'impression */
+  #print-title { display:flex !important; }
+
+  @page { size:A3 landscape; margin:1.2cm; }
+}
+
+/* Titre visible seulement à l'impression */
+#print-title {
+  display:none;
+  align-items:baseline;
+  justify-content:space-between;
+  margin-bottom:.7rem;
+  padding-bottom:.45rem;
+  border-bottom:2px solid #c9a84c;
+}
+#print-title-label {
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:1.5rem;
+  color:#4a3728;
+}
+#print-title-date {
+  font-family:'Jost',sans-serif;
+  font-size:.78rem;
+  color:#7a6a50;
+  font-style:normal;
+}
+</style>
+</head>
+<body>
+
+<header class="sticky-header" id="stickyHeader">
+  <div class="header-inner">
+    <div class="header-torii">
+      <!-- Pommes à gauche -->
+      <span style="font-size:1.1rem;opacity:.8;letter-spacing:-.1em">🍎🍏</span>
+      <svg class="torii-svg" viewBox="0 0 44 34" fill="none"><rect x="0" y="4" width="44" height="4" rx="2" fill="#b02020"/><rect x="4" y="9" width="36" height="3" rx="1.5" fill="#b02020"/><rect x="7" y="12" width="4" height="22" rx="2" fill="#b02020"/><rect x="33" y="12" width="4" height="22" rx="2" fill="#b02020"/></svg>
+      <div class="header-eyebrow">Morbihan · Saint-Léry</div>
+      <!-- Cèdre à droite -->
+      <svg class="torii-svg" viewBox="0 0 44 34" fill="none" style="opacity:.8">
+        <!-- Tronc -->
+        <rect x="20" y="26" width="4" height="8" rx="1" fill="#5c3d1e"/>
+        <!-- Étages du cèdre (triangle sur triangle) -->
+        <polygon points="22,2 8,16 36,16" fill="#2d4a28"/>
+        <polygon points="22,8 10,20 34,20" fill="#3d5c35"/>
+        <polygon points="22,14 12,26 32,26" fill="#4a7040"/>
+      </svg>
+      <!-- Raisin à droite -->
+      <span style="font-size:1.1rem;opacity:.8;letter-spacing:-.1em">🍇🍇</span>
+    </div>
+    <h1 class="site-title">La ptite maison</h1>
+    <div class="site-tagline">Le journal de la maison &amp; du jardin</div>
+    <div style="font-size:.58rem;margin-top:.2rem" id="fbStatus">⏳ Connexion…</div>
+  </div>
+  <nav class="tabs-main">
+    <button class="tab-main active" onclick="switchView('planning',this,event)">📅 Planning</button>
+    <button class="tab-main" onclick="switchView('fil',this,event)">📸 Fil rouge</button>
+    <button class="tab-main" onclick="switchView('travaux',this,event)">🔧 Travaux maison &amp; jardin</button>
+    <button class="tab-main" onclick="switchView('jardin',this,event)">🌿 Calendrier jardin</button>
+    <button class="tab-main" onclick="switchView('coin',this,event)">🗺️ Le coin</button>
+    <button class="tab-main" onclick="switchView('verger',this,event)">🍎 Plan du verger</button>
+    <button class="tab-main" onclick="switchView('check',this,event)">✅ Arrivée / Départ</button>
+  </nav>
+</header>
+
+<!-- ════ PANNEAU SÉJOUR ════ -->
+<div class="sejour-panel-backdrop" id="spBackdrop" onclick="closeSejourPanel()"></div>
+<div class="sejour-panel" id="sejourPanel">
+  <div class="sp-header">
+    <button class="sp-close" onclick="closeSejourPanel()">×</button>
+    <div class="sp-dates" id="spDates">—</div>
+    <div class="sp-meta">
+      <span class="sp-nights-badge" id="spNights"></span>
+      <span class="sp-qui" id="spQui"></span>
+      <button class="sp-edit-btn" onclick="editCurrentSejour()">✏️ Modifier</button>
+    </div>
+    <div style="font-size:.7rem;color:var(--muted);font-style:italic;margin-top:.35rem" id="spNote"></div>
+  </div>
+  <div class="sp-body">
+
+    <!-- MOMENTS LIÉS -->
+    <div class="sp-section">
+      <div class="sp-section-title">
+        📸 Photos &amp; récit
+        <button class="sp-section-action" onclick="openEditEntry(activeSejour.id);closeSejourPanel()">✏️ Enrichir</button>
+      </div>
+      <div id="spMoments"></div>
+    </div>
+
+    <!-- TRAVAUX LIÉS -->
+    <div class="sp-section">
+      <div class="sp-section-title">
+        🔧 Travaux réalisés / prévus
+        <button class="sp-section-action" onclick="switchView('travaux',document.querySelectorAll('.tab-main')[2]);closeSejourPanel()">Voir tout</button>
+      </div>
+      <div id="spTravaux"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ VUE PLANNING ════ -->
+<section class="view active" id="view-planning">
+  <div class="select-hint" id="selectHint">
+    <span class="sh-step" id="shStep">1/2</span>
+    <span class="sh-msg" id="shMsg">Cliquez sur la date d'arrivée</span>
+    <button class="sh-cancel" onclick="cancelSel()">Annuler</button>
+  </div>
+  <div class="plan-toolbar">
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+      <button class="btn-add" onclick="startNewSejour()">+ Nouveau séjour</button>
+      <button class="btn-sm" onclick="openNewEvent()">🎉 Événement local</button>
+    </div>
+    <div class="plan-status" id="planStatus"></div>
+  </div>
+  <div class="plan-nav">
+    <button class="nav-btn" onclick="navYear(-1)">‹</button>
+    <div class="year-lbl" id="yearLbl"></div>
+    <button class="nav-btn" onclick="navYear(1)">›</button>
+  </div>
+  <div class="year-grid" id="yearGrid"></div>
+  <div class="plan-legend" id="planLegend"></div>
+</section>
+
+<!-- ════ VUE FIL ROUGE ════ -->
+<section class="view" id="view-fil">
+  <div class="fil-toolbar">
+    <div class="section-title">Nos passages</div>
+    <div style="font-size:.75rem;color:var(--muted);font-style:italic">Cliquez sur un séjour pour l'enrichir</div>
+  </div>
+  <div id="timeline"></div>
+</section>
+
+<!-- ════ VUE TRAVAUX ════ -->
+<section class="view" id="view-travaux">
+  <div class="fil-toolbar">
+    <div class="section-title">Travaux &amp; projets</div>
+    <button class="btn-add" onclick="openNewTravail()">+ Ajouter</button>
+  </div>
+  <div class="travaux-filters">
+    <button class="filter-chip active" onclick="setTF('tous',this)">Tous</button>
+    <button class="filter-chip" onclick="setTF('en-cours',this)">En cours</button>
+    <button class="filter-chip" onclick="setTF('a-faire',this)">À faire</button>
+    <button class="filter-chip" onclick="setTF('termine',this)">Terminés</button>
+  </div>
+  <div class="travaux-cols">
+    <div><div class="tcol-hdr"><div class="tcol-title">🏡 Maison <span class="tcol-count" id="cnt-m">0</span></div></div><div id="col-m"></div></div>
+    <div><div class="tcol-hdr"><div class="tcol-title">🌿 Jardin <span class="tcol-count" id="cnt-j">0</span></div></div><div id="col-j"></div></div>
+  </div>
+</section>
+
+<!-- ════ VUE JARDIN — GANTT ════ -->
+<section class="view" id="view-jardin">
+  <div class="fil-toolbar">
+    <div class="section-title">Calendrier perpétuel Saint-Léry</div>
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+      <button class="btn-sm" onclick="printGantt()">🖨️ Imprimer</button>
+      <button class="btn-sm" onclick="openManageCats()">⚙️ Catégories</button>
+      <button class="btn-add" onclick="openNewJardinTask()">+ Ajouter</button>
+    </div>
+  </div>
+  <div class="gantt-wrap">
+    <div id="print-title">
+      <span id="print-title-label">🌿 Calendrier perpétuel Saint-Léry</span>
+      <span id="print-title-date"></span>
+    </div>
+    <div class="gantt-header" id="ganttMonths"></div>
+    <div id="ganttBody"></div>
+  </div>
+</section>
+
+<!-- ════ VUE PLAN DU VERGER ════ -->
+<section class="view" id="view-verger">
+  <div class="fil-toolbar">
+    <div class="section-title">Plan du verger</div>
+    <a href="https://vacherfabien-lang.github.io/Fruits/" target="_blank" class="btn-add" style="text-decoration:none">
+      🌳 Ouvrir Fruitier Go
+    </a>
+  </div>
+  <p style="font-size:.8rem;color:var(--muted);font-style:italic;margin-bottom:.85rem">
+    Carte interactive complète des arbres fruitiers — cliquez sur "Fruitier Go" pour explorer, identifier et suivre chaque arbre.
+  </p>
+  <div style="border-radius:8px;overflow:hidden;border:1px solid var(--line);box-shadow:0 2px 12px rgba(30,26,18,.08)">
+    <img src="verger.png" alt="Plan du verger de Saint-Léry"
+      style="width:100%;display:block;max-height:70vh;object-fit:contain;background:#f0ede4"
+      onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;color:var(--muted);font-style:italic\'>📁 Uploadez le fichier <strong>verger.png</strong> sur GitHub à côté de index.html</div>'">
+  </div>
+  <div style="margin-top:.85rem;text-align:center">
+    <a href="https://vacherfabien-lang.github.io/Fruits/" target="_blank"
+      style="display:inline-flex;align-items:center;gap:.5rem;background:var(--vert-moyen);color:white;padding:.65rem 1.4rem;border-radius:6px;text-decoration:none;font-family:'Jost',sans-serif;font-size:.88rem;font-weight:500;box-shadow:0 2px 8px rgba(74,112,64,.3);transition:background .15s"
+      onmouseover="this.style.background='var(--vert-fonce)'" onmouseout="this.style.background='var(--vert-moyen)'">
+      🌳 Ouvrir l'application Fruitier Go
+    </a>
+  </div>
+</section>
+
+<!-- ════ VUE ARRIVÉE / DÉPART ════ -->
+<section class="view" id="view-check">
+
+  <!-- TOOLBAR -->
+  <div class="fil-toolbar" style="margin-bottom:.9rem">
+    <div class="section-title">Arrivée &amp; Départ</div>
+    <button class="btn-sm" id="clEditBtn" onclick="toggleClEditMode()"
+      style="border-color:var(--vert-moyen);color:var(--vert-moyen)">✏️ Modifier</button>
+  </div>
+
+  <!-- COLONNES -->
+  <div class="check-cols" style="margin-bottom:1.5rem">
+
+    <!-- Arrivée -->
+    <div class="check-col">
+      <div class="check-col-header">
+        <div class="check-col-title">🔑 Arrivée</div>
+        <div style="display:flex;align-items:center;gap:.5rem;margin-top:.3rem">
+          <div class="cl-progress" style="flex:1"><div class="cl-progress-bar" id="checkProgressA"></div></div>
+          <button class="cl-reset-btn" onclick="resetPermCL('arrivee')">Tout décocher</button>
+        </div>
+      </div>
+      <ul class="checklist-list" id="checkListA"></ul>
+      <!-- Zone ajout — visible seulement en mode édition -->
+      <div class="cl-add-row" id="clAddRowA" style="display:none">
+        <input class="cl-add-input" id="checkAddA" placeholder="Nouvelle tâche…" onkeydown="if(event.key==='Enter')addPermCL('arrivee')">
+        <button class="cl-add-btn" onclick="addPermCL('arrivee')">+</button>
+      </div>
+    </div>
+
+    <!-- Départ -->
+    <div class="check-col">
+      <div class="check-col-header">
+        <div class="check-col-title">🚗 Départ</div>
+        <div style="display:flex;align-items:center;gap:.5rem;margin-top:.3rem">
+          <div class="cl-progress" style="flex:1"><div class="cl-progress-bar" id="checkProgressD"></div></div>
+          <button class="cl-reset-btn" onclick="resetPermCL('depart')">Tout décocher</button>
+        </div>
+      </div>
+      <ul class="checklist-list" id="checkListD"></ul>
+      <div class="cl-add-row" id="clAddRowD" style="display:none">
+        <input class="cl-add-input" id="checkAddD" placeholder="Nouvelle tâche…" onkeydown="if(event.key==='Enter')addPermCL('depart')">
+        <button class="cl-add-btn" onclick="addPermCL('depart')">+</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PLAN DE LA MAISON -->
+  <div class="plan-section">
+    <div class="fil-toolbar" style="margin-bottom:.7rem">
+      <div class="section-title" style="font-size:1.2rem">Plan de la maison</div>
+      <div style="display:flex;gap:.4rem">
+        <button class="btn-sm" onclick="togglePlanEdit()" id="planEditBtn">✏️ Modifier</button>
+        <button class="btn-add" onclick="openNewPin()" id="planAddBtn" style="display:none">+ Épingle</button>
+      </div>
+    </div>
+    <div class="plan-hint" id="planHint" style="display:none;font-size:.75rem;color:var(--torii);font-style:italic;margin-bottom:.5rem">
+      Cliquez sur le plan pour placer une épingle
+    </div>
+
+    <!-- Zone plan -->
+    <div style="display:flex;gap:.4rem;margin-bottom:.6rem">
+      <button class="filter-chip active" onclick="switchFloor('rdc',this)" id="floorRdc">🏠 Rez-de-chaussée</button>
+      <button class="filter-chip" onclick="switchFloor('etage',this)" id="floorEtage">🔼 Étage</button>
+    </div>
+    <div class="house-plan-wrap">
+      <div id="housePlan" class="house-plan" onclick="planClick(event)">
+
+        <img id="planRDC" src="plan_rdc.jpg" style="width:100%;display:block;border-radius:7px" alt="Plan RDC">
+
+        <img id="planETAGE" src="plan_etage.jpg" style="width:100%;display:none;border-radius:7px" alt="Plan Étage">
+
+        <!-- Épingles dynamiques -->
+        <div id="planPins"></div>
+      </div>
+    </div>
+
+    <!-- Légende épingles -->
+    <div id="planLegendEl" style="margin-top:.6rem;display:flex;flex-wrap:wrap;gap:.4rem"></div>
+  </div>
+</section>
+
+<!-- MODAL PHOTO TÂCHE CHECKLIST -->
+<div class="modal-backdrop" id="modalClPhoto" onclick="if(event.target===this)closeMod('modalClPhoto')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title" id="modalClPhotoTitle">Photo d'explication</h2>
+    <input type="hidden" id="clPhotoTab">
+    <input type="hidden" id="clPhotoId">
+    <div class="form-group">
+      <label class="form-label">Label de la tâche</label>
+      <input type="text" class="form-control" id="clPhotoLabel" placeholder="ex : Ouvrir l'arrivée d'eau">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Photo d'explication <span style="font-size:.7rem;color:var(--muted)">(optionnelle — ex : photo de la vanne)</span></label>
+      <div id="clPhotoPreviewWrap" style="margin-bottom:.5rem"></div>
+      <label style="display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.8rem;color:var(--vert-moyen);border:1px dashed var(--vert-moyen);border-radius:5px;padding:.3rem .7rem">
+        📷 Choisir une photo
+        <input type="file" accept="image/*" style="display:none" onchange="previewClPhoto(this)">
+      </label>
+      <button onclick="clearClPhoto()" id="clPhotoClearBtn" style="display:none;margin-left:.5rem;background:none;border:none;color:var(--torii);font-size:.75rem;cursor:pointer;text-decoration:underline">Supprimer la photo</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeMod('modalClPhoto')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveClPhotoItem()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ÉPINGLE -->
+<div class="modal-backdrop" id="modalPin" onclick="if(event.target===this)closeMod('modalPin')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title" id="modalPinTitle">Nouvelle épingle</h2>
+    <input type="hidden" id="editPinId">
+    <input type="hidden" id="editPinX">
+    <input type="hidden" id="editPinY">
+    <div class="form-group">
+      <label class="form-label">Nom / équipement</label>
+      <input type="text" class="form-control" id="pinName" placeholder="ex : Arrivée d'eau générale">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea class="form-control" id="pinDesc" placeholder="ex : Vanne quart de tour sous l'évier de la buanderie" style="min-height:55px"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Catégorie</label>
+      <div class="toggle-list" id="pinCatToggle">
+        <button class="toggle-pill on" data-pcat="eau" onclick="selectPinCat(this)">💧 Eau</button>
+        <button class="toggle-pill" data-pcat="elec" onclick="selectPinCat(this)">⚡ Élec</button>
+        <button class="toggle-pill" data-pcat="gaz" onclick="selectPinCat(this)">🔥 Gaz/Chauf.</button>
+        <button class="toggle-pill" data-pcat="info" onclick="selectPinCat(this)">ℹ️ Info</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="btnDelPin" onclick="deletePin()" style="display:none">Supprimer</button>
+      <button class="btn btn-secondary" onclick="closeMod('modalPin')">Annuler</button>
+      <button class="btn btn-primary" onclick="savePin()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CATÉGORIES -->
+<div class="modal-backdrop" id="modalCats" onclick="if(event.target===this)closeMod('modalCats')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title">Gérer les catégories</h2>
+    <div id="catsList" style="margin-bottom:.8rem"></div>
+    <div style="border-top:1px solid var(--line);padding-top:.8rem;margin-top:.4rem">
+      <div class="form-label" style="margin-bottom:.45rem">Nouvelle catégorie</div>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:flex-end">
+        <div style="flex:1;min-width:120px">
+          <input type="text" class="form-control" id="newCatName" placeholder="Nom" style="margin-bottom:.4rem">
+          <input type="text" class="form-control" id="newCatIcon" placeholder="Emoji (ex : 🌸)" maxlength="4">
+        </div>
+        <div>
+          <div class="form-label">Couleur</div>
+          <input type="color" id="newCatColor" value="#4a7040" style="width:52px;height:38px;border:1px solid var(--line-strong);border-radius:4px;cursor:pointer;padding:2px">
+        </div>
+        <button class="btn btn-primary" onclick="addCat()" style="align-self:flex-end">Ajouter</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeMod('modalCats');renderGantt()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TÂCHE JARDIN -->
+<div class="modal-backdrop" id="modalJardin" onclick="if(event.target===this)closeMod('modalJardin')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title" id="modalJardinTitle">Nouvelle tâche</h2>
+    <input type="hidden" id="editJardinId">
+    <div class="form-group">
+      <label class="form-label">Tâche</label>
+      <input type="text" class="form-control" id="jardinLabel" placeholder="ex : Tailler les rosiers">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Début (mois)</label>
+        <select class="form-control" id="jardinStart">
+          <option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option>
+          <option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option>
+          <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
+          <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fin (mois)</label>
+        <select class="form-control" id="jardinEnd">
+          <option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option>
+          <option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option>
+          <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
+          <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Catégorie</label>
+      <div class="toggle-list" id="jardinCatToggle"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="btnDelJardin" onclick="deleteJardinTask()" style="display:none">Supprimer</button>
+      <button class="btn btn-secondary" onclick="closeMod('modalJardin')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveJardinTask()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ VUE LE COIN ════ -->
+<section class="view" id="view-coin">
+  <div class="fil-toolbar">
+    <div class="section-title">Le coin</div>
+    <button class="btn-add" onclick="openNewPOI()" id="coinAddBtn">+ Ajouter un lieu</button>
+  </div>
+
+  <!-- Sous-onglets -->
+  <div style="display:flex;gap:.35rem;margin-bottom:.9rem">
+    <button class="filter-chip active" id="coinTabMap" onclick="switchCoinTab('map',this)">🗺️ Nos lieux</button>
+    <button class="filter-chip" id="coinTabBroc" onclick="switchCoinTab('broc',this)">🌳 Carte Brocéliande</button>
+  </div>
+
+  <!-- Onglet 1 : carte Leaflet + POI -->
+  <div id="coinPanelMap">
+    <div class="coin-legend" id="coinLegend"></div>
+    <div id="coinMap" style="width:100%;height:400px;border-radius:8px;border:1px solid var(--line);overflow:hidden;margin-bottom:1rem;background:var(--pierre);z-index:0;position:relative"></div>
+    <div class="coin-grid" id="coinGrid"></div>
+  </div>
+
+  <!-- Onglet 2 : carte touristique Brocéliande -->
+  <div id="coinPanelBroc" style="display:none">
+    <p style="font-size:.78rem;color:var(--muted);font-style:italic;margin-bottom:.75rem">
+      Carte touristique Destination Brocéliande · Saint-Léry est indiqué sur la carte.
+    </p>
+    <div style="border-radius:8px;overflow:hidden;border:1px solid var(--line);box-shadow:0 2px 12px rgba(30,26,18,.08);background:#f0ede4">
+      <img src="carte-broceliande.jpg"
+        alt="Carte touristique Destination Brocéliande"
+        style="width:100%;display:block;cursor:zoom-in"
+        onclick="openCarteZoom(this)"
+        onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;color:var(--muted);font-style:italic\'>📁 Uploadez <strong>carte-broceliande.jpg</strong> sur GitHub</div>'">
+    </div>
+    <p style="font-size:.68rem;color:var(--muted);margin-top:.45rem;text-align:right">
+      © Destination Brocéliande · <a href="https://www.broceliande-vacances.com" target="_blank" style="color:var(--vert-moyen)">broceliande-vacances.com</a>
+    </p>
+  </div>
+</section>
+
+<!-- Zoom carte plein écran -->
+<div id="carteZoomBackdrop" onclick="closeCarteZoom()"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:500;align-items:center;justify-content:center;padding:.5rem;cursor:zoom-out;overflow:auto">
+  <img id="carteZoomImg" src="" alt="" style="max-width:100%;max-height:100%;border-radius:4px;object-fit:contain">
+</div>
+
+<!-- MODAL ÉVÉNEMENT LOCAL -->
+<div class="modal-backdrop" id="modalEvent" onclick="if(event.target===this)closeMod('modalEvent')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title" id="modalEventTitle">Nouvel événement</h2>
+    <input type="hidden" id="editEventId">
+    <div class="form-group">
+      <label class="form-label">Nom de l'événement</label>
+      <input type="text" class="form-control" id="eventName" placeholder="ex : Marché de Concoret">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Date début</label>
+        <input type="date" class="form-control" id="eventStart">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date fin (optionnel)</label>
+        <input type="date" class="form-control" id="eventEnd">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Type</label>
+      <div class="toggle-list" id="eventTypeToggle">
+        <button class="toggle-pill" data-type="fete" onclick="selectEventType(this)">🎉 Fête</button>
+        <button class="toggle-pill" data-type="marche" onclick="selectEventType(this)">🛒 Marché</button>
+        <button class="toggle-pill" data-type="sport" onclick="selectEventType(this)">🚴 Sport</button>
+        <button class="toggle-pill" data-type="culture" onclick="selectEventType(this)">🎭 Culture</button>
+        <button class="toggle-pill on" data-type="autre" onclick="selectEventType(this)">📌 Autre</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Note</label>
+      <input type="text" class="form-control" id="eventNote" placeholder="ex : Tous les 1ers vendredis du mois">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="btnDelEvent" onclick="deleteEvent()" style="display:none">Supprimer</button>
+      <button class="btn btn-secondary" onclick="closeMod('modalEvent')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveEvent()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL LIEU (POI) -->
+<div class="modal-backdrop" id="modalPOI" onclick="if(event.target===this)closeMod('modalPOI')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title" id="modalPOITitle">Nouveau lieu</h2>
+    <input type="hidden" id="editPOIId">
+    <div class="form-group">
+      <label class="form-label">Nom</label>
+      <input type="text" class="form-control" id="poiName" placeholder="ex : Forêt de Brocéliande">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description courte</label>
+      <input type="text" class="form-control" id="poiDesc" placeholder="ex : Sentiers de randonnée, fontaine de Barenton…">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Catégorie</label>
+      <div class="toggle-list" id="poiCatToggle">
+        <button class="toggle-pill" data-cat="nature" onclick="selectPOICat(this)">🌲 Nature</button>
+        <button class="toggle-pill" data-cat="culture" onclick="selectPOICat(this)">🏰 Culture</button>
+        <button class="toggle-pill" data-cat="resto" onclick="selectPOICat(this)">🍽️ Resto</button>
+        <button class="toggle-pill" data-cat="sport" onclick="selectPOICat(this)">🚴 Sport</button>
+        <button class="toggle-pill on" data-cat="autre" onclick="selectPOICat(this)">📌 Autre</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Latitude</label>
+        <input type="number" class="form-control" id="poiLat" step="0.0001" placeholder="48.0903">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Longitude</label>
+        <input type="number" class="form-control" id="poiLng" step="0.0001" placeholder="-2.2551">
+      </div>
+    </div>
+    <div class="participants-hint" style="margin-top:-.4rem;margin-bottom:.6rem">Copiez les coordonnées depuis Google Maps (clic droit sur la carte)</div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="btnDelPOI" onclick="deletePOI()" style="display:none">Supprimer</button>
+      <button class="btn btn-secondary" onclick="closeMod('modalPOI')">Annuler</button>
+      <button class="btn btn-primary" onclick="savePOI()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL SÉJOUR ════ -->
+<div class="modal-backdrop" id="modalSejour" onclick="if(event.target===this)closeMod('modalSejour')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title" id="modalSejourTitle">Nouveau séjour</h2>
+    <input type="hidden" id="editSejourId">
+    <div class="modal-sejour-info" id="sejourInfo" style="display:none"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Arrivée</label><input type="date" class="form-control" id="sejourStart" oninput="updateSejourInfo()"></div>
+      <div class="form-group"><label class="form-label">Départ</label><input type="date" class="form-control" id="sejourEnd" oninput="updateSejourInfo()"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Qui vient ?</label><input type="text" class="form-control" id="sejourQui" placeholder="ex : Nous · Papa · Maman"><div class="participants-hint">Saisissez librement</div></div>
+    <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="sejourNote" placeholder="Occasion, projet prévu…" style="min-height:50px"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="btnDelSejour" onclick="deleteSejour()" style="display:none">Supprimer</button>
+      <button class="btn btn-secondary" onclick="closeMod('modalSejour')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveSejour()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL MOMENT ════ -->
+<div class="modal-backdrop" id="modalEntry" onclick="if(event.target===this)closeMod('modalEntry')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title" id="modalEntryTitle">Enrichir ce séjour</h2>
+    <input type="hidden" id="editEntryId">
+    <!-- Info séjour en lecture seule -->
+    <div class="modal-sejour-info" id="entrySejourInfo" style="margin-bottom:.85rem;padding:.4rem .62rem;background:var(--pierre);border-radius:4px;font-size:.79rem;color:var(--muted);font-style:italic"></div>
+    <div class="form-group">
+      <label class="form-label">Titre</label>
+      <input type="text" class="form-control" id="entryTitle" placeholder="ex : Week-end taille des haies">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Commentaire</label>
+      <textarea class="form-control" id="entryComment" placeholder="Racontez ce que vous avez fait…"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Catégories</label>
+      <div class="toggle-list" id="entryTags">
+        <button class="toggle-pill" data-tag="jardin" onclick="this.classList.toggle('on')">🌿 Jardin</button>
+        <button class="toggle-pill" data-tag="bricolage" onclick="this.classList.toggle('on')">🔨 Bricolage</button>
+        <button class="toggle-pill" data-tag="maison" onclick="this.classList.toggle('on')">🏠 Maison</button>
+        <button class="toggle-pill" data-tag="convivial" onclick="this.classList.toggle('on')">🍽️ Convivial</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Photos</label>
+      <div class="photos-row" id="photosRow">
+        <label class="photo-add-btn"><span>+</span><input type="file" accept="image/*" multiple style="display:none" onchange="addPhotos(this)"></label>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="btnDelEntry" onclick="deleteEntry()" style="display:none">Supprimer</button>
+      <button class="btn btn-secondary" onclick="closeMod('modalEntry')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveEntry()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL TRAVAIL ════ -->
+<div class="modal-backdrop" id="modalTravail" onclick="if(event.target===this)closeMod('modalTravail')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title" id="modalTravailTitle">Nouveau travail</h2>
+    <input type="hidden" id="editTravailId">
+    <div class="form-group"><label class="form-label">Description</label><input type="text" class="form-control" id="travailTitle" placeholder="ex : Repeindre les volets"></div>
+    <div class="form-group"><label class="form-label">Détail</label><textarea class="form-control" id="travailDetail" placeholder="Précisions…" style="min-height:50px"></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Lieu</label><select class="form-control" id="travailLieu"><option value="maison">Maison</option><option value="jardin">Jardin</option></select></div>
+      <div class="form-group"><label class="form-label">Statut</label><select class="form-control" id="travailStatut"><option value="a-faire">À faire</option><option value="en-cours">En cours</option><option value="termine">Terminé</option></select></div>
+    </div>
+    <div class="form-group"><label class="form-label">Priorité</label><select class="form-control" id="travailPrio"><option value="normal">Normale</option><option value="urgent">Urgent</option></select></div>
+    <div class="form-group"><label class="form-label">Séjour lié (optionnel)</label><select class="form-control" id="travailSejour"><option value="">— aucun —</option></select></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="btnDelTravail" onclick="deleteTravail()" style="display:none">Supprimer</button>
+      <button class="btn btn-secondary" onclick="closeMod('modalTravail')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveTravail()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()"><button class="lightbox-close">✕</button><img src="" id="lightboxImg" alt=""></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDdPSOp7qCnVahkdXIsurkwaKHUFPaXto0",
+  authDomain: "ptitemaison-cac5f.firebaseapp.com",
+  databaseURL: "https://ptitemaison-cac5f-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "ptitemaison-cac5f",
+  storageBucket: "ptitemaison-cac5f.firebasestorage.app",
+  messagingSenderId: "801198014159",
+  appId: "1:801198014159:web:cb3e6bc1d5321de312c1ba"
+};
+
+/* ── Mode : Firebase si dispo, localStorage sinon ── */
+let USE_FB = false;
+let fbDb, fbRefs={};
+try{
+  if(typeof firebase !== 'undefined'){
+    firebase.initializeApp(firebaseConfig);
+    fbDb = firebase.database();
+    fbRefs = {
+      sejours:  fbDb.ref('sejours'),
+      entries:  fbDb.ref('entries'),
+      travaux:  fbDb.ref('travaux'),
+      checklist:fbDb.ref('checklist'),
+      jardin:   fbDb.ref('jardin'),
+      cats:     fbDb.ref('cats'),
+      events:   fbDb.ref('events'),
+      pois:     fbDb.ref('pois'),
+      permcl:   fbDb.ref('permcl'),
+      pins:     fbDb.ref('pins'),
+    };
+    USE_FB = true;
+  }
+}catch(e){
+  console.warn('Firebase non disponible, mode local activé');
+}
+
+/* ═══════════════════════ ÉTAT LOCAL ═══════════════════════ */
+let sejours=[], entries=[], travaux=[];
+let checklist={}, jardinData={}, ganttCats=[];
+let events=[], pois=[];
+let tFilter='tous', currentYear=new Date().getFullYear();
+let activeSejour=null, activeCLTab='arrivee';
+
+const SEJ_COLORS=['#b02020','#4a7040','#8b6235','#c9a84c','#2d4a28','#d4640a','#3a3d42','#7aab5a'];
+const colorFor=i=>SEJ_COLORS[i%SEJ_COLORS.length];
+
+/* ═══════════════════════ FIREBASE HELPERS ═══════════════════════ */
+const LS = {
+  get:(k)=>{ try{return JSON.parse(localStorage.getItem('sl_'+k))||null}catch{return null} },
+  set:(k,d)=>{ try{localStorage.setItem('sl_'+k,JSON.stringify(d))}catch{} }
+};
+let _saving = false; // flag pour éviter le race condition listener/save
+
+function fbToArr(val){
+  if(!val||typeof val!=='object') return [];
+  return Object.values(val).filter(v=>v&&typeof v==='object');
+}
+function arrToFb(arr){
+  const o={};
+  arr.forEach(x=>{ if(x&&x.id) o[x.id]=x; });
+  return o;
+}
+async function fbSave(key, data){
+  LS.set(key, data);
+  if(!USE_FB) return;
+  _saving = true;
+  try{
+    if(Array.isArray(data)) await fbRefs[key].set(arrToFb(data));
+    else await fbRefs[key].set(data);
+  }catch(e){
+    console.error('Firebase save error ['+key+']:', e);
+    showToast('⚠ Sauvegarde locale uniquement');
+  } finally {
+    // Petit délai pour laisser le listener confirmer la valeur écrite
+    setTimeout(()=>{ _saving = false; }, 800);
+  }
+}
+function setConnState(ok){
+  const el=document.getElementById('fbStatus');
+  if(!el)return;
+  el.textContent = USE_FB ? (ok?'● Connecté':'⚠ Hors-ligne') : '💾 Mode local';
+  el.style.color = USE_FB ? (ok?'var(--vert-moyen)':'var(--torii)') : 'var(--brique-dark)';
+}
+
+/* ═══════════════════════ CHARGEMENT INITIAL ═══════════════════════ */
+async function initFirebase(){
+  showToast('Chargement…');
+
+  if(!USE_FB){
+    // Mode local — lire depuis localStorage
+    sejours   = LS.get('sejours')   || [];
+    entries   = LS.get('entries')   || [];
+    travaux   = LS.get('travaux')   || [];
+    checklist = LS.get('checklist') || {};
+    jardinData= LS.get('jardin')    || {};
+    ganttCats = LS.get('cats')      || [];
+    events    = LS.get('events')    || [];
+    pois      = LS.get('pois')      || [];
+    if(!sejours.length)   { sejours   =SEED_SEJOURS;   LS.set('sejours',  sejours);   }
+    if(!entries.length)   { entries   =SEED_ENTRIES;   LS.set('entries',  entries);   }
+    if(!travaux.length)   { travaux   =SEED_TRAVAUX;   LS.set('travaux',  travaux);   }
+    if(!checklist.arrivee){ checklist =SEED_CHECKLIST; LS.set('checklist',checklist); }
+    if(!jardinData.tasks) { jardinData=SEED_JARDIN;    LS.set('jardin',   jardinData);}
+    if(!ganttCats.length) { ganttCats =DEFAULT_CATS;   LS.set('cats',     ganttCats); }
+    if(!pois.length)      { pois      =SEED_POIS;      LS.set('pois',     pois);      }
+    migrateJardinData();
+    setConnState(false);
+    showToast('');
+    renderYear();
+    return;
+  }
+
+  const timeout = new Promise((_,reject)=>setTimeout(()=>reject(new Error('timeout')),5000));
+  try{
+    const [sSnap,eSnap,tSnap,clSnap,jSnap,cSnap,evSnap,poiSnap] = await Promise.race([
+      Promise.all([
+        fbRefs.sejours.once('value'),   fbRefs.entries.once('value'),
+        fbRefs.travaux.once('value'),   fbRefs.checklist.once('value'),
+        fbRefs.jardin.once('value'),    fbRefs.cats.once('value'),
+        fbRefs.events.once('value'),    fbRefs.pois.once('value'),
+      ]),
+      timeout
+    ]);
+    sejours   = sSnap.exists()   ? fbToArr(sSnap.val())   : [];
+    entries   = eSnap.exists()   ? fbToArr(eSnap.val())   : [];
+    travaux   = tSnap.exists()   ? fbToArr(tSnap.val())   : [];
+    checklist = clSnap.exists()  ? clSnap.val()            : {};
+    jardinData= jSnap.exists()   ? jSnap.val()             : {};
+    ganttCats = cSnap.exists()   ? fbToArr(cSnap.val())   : [];
+    events    = evSnap.exists()  ? fbToArr(evSnap.val())  : [];
+    pois      = poiSnap.exists() ? fbToArr(poiSnap.val()) : [];
+    if(!sejours.length)   { sejours   =SEED_SEJOURS;   await fbSave('sejours',sejours);   }
+    if(!entries.length)   { entries   =SEED_ENTRIES;   await fbSave('entries',entries);   }
+    if(!travaux.length)   { travaux   =SEED_TRAVAUX;   await fbSave('travaux',travaux);   }
+    if(!checklist.arrivee){ checklist =SEED_CHECKLIST; await fbSave('checklist',checklist);}
+    if(!jardinData.tasks) { jardinData=SEED_JARDIN;    await fbSave('jardin',jardinData); }
+    if(!ganttCats.length) { ganttCats =DEFAULT_CATS;   await fbSave('cats',ganttCats);    }
+    if(!pois.length)      { pois      =SEED_POIS;      await fbSave('pois',pois);         }
+    migrateJardinData();
+    setConnState(true);
+    showToast('');
+  }catch(e){
+    console.warn('Firebase init error:',e.message);
+    USE_FB=false;
+    sejours   = LS.get('sejours')   || SEED_SEJOURS;
+    entries   = LS.get('entries')   || SEED_ENTRIES;
+    travaux   = LS.get('travaux')   || SEED_TRAVAUX;
+    checklist = LS.get('checklist') || SEED_CHECKLIST;
+    jardinData= LS.get('jardin')    || SEED_JARDIN;
+    ganttCats = LS.get('cats')      || DEFAULT_CATS;
+    events    = LS.get('events')    || [];
+    pois      = LS.get('pois')      || SEED_POIS;
+    migrateJardinData();
+    setConnState(false);
+    showToast('⚠ Mode local');
+  }
+
+  renderYear();
+  if(!USE_FB) return;
+
+  fbRefs.sejours.on('value', snap=>{
+    if(_saving) return;
+    sejours=snap.exists()?fbToArr(snap.val()):[];
+    if(document.getElementById('view-planning').classList.contains('active'))renderYear();
+    if(document.getElementById('view-fil').classList.contains('active'))renderTimeline();
+    if(activeSejour){const s=sejours.find(x=>x.id===activeSejour.id);if(s)openSejourPanel(s.id);}
+  });
+  fbRefs.entries.on('value', snap=>{
+    if(_saving) return;
+    entries=snap.exists()?fbToArr(snap.val()):[];
+    if(document.getElementById('view-fil').classList.contains('active'))renderTimeline();
+  });
+  fbRefs.travaux.on('value', snap=>{
+    if(_saving) return;
+    travaux=snap.exists()?fbToArr(snap.val()):[];
+    if(document.getElementById('view-travaux').classList.contains('active'))renderTravaux();
+  });
+  fbRefs.checklist.on('value', snap=>{
+    if(_saving) return;
+    checklist=snap.exists()?snap.val():{};
+  });
+  fbRefs.jardin.on('value', snap=>{
+    if(_saving) return;
+    jardinData=snap.exists()?snap.val():{};migrateJardinData();
+    if(document.getElementById('view-jardin').classList.contains('active'))renderGantt();
+  });
+  fbRefs.cats.on('value', snap=>{
+    if(_saving) return;
+    ganttCats=snap.exists()?fbToArr(snap.val()):DEFAULT_CATS;
+    if(document.getElementById('view-jardin').classList.contains('active'))renderGantt();
+  });
+  fbRefs.events.on('value', snap=>{
+    if(_saving) return;
+    events=snap.exists()?fbToArr(snap.val()):[];
+    if(document.getElementById('view-planning').classList.contains('active'))renderYear();
+  });
+  fbRefs.pois.on('value', snap=>{
+    if(_saving) return;
+    pois=snap.exists()?fbToArr(snap.val()):[];
+    if(document.getElementById('view-coin').classList.contains('active'))renderCoin();
+  });
+}
+
+/* ═══════════════════════ SEEDS ═══════════════════════ */
+const SEED_SEJOURS=[
+  {id:'s1',start:'2026-05-01',end:'2026-05-04',qui:'Les 4',note:'Week-end Ascension — enduit',color:'#b02020'},
+  {id:'s2',start:'2026-07-12',end:'2026-07-26',qui:'Les 4',note:'Grandes vacances',color:'#4a7040'},
+  {id:'s3',start:'2026-10-17',end:'2026-10-25',qui:'Les 4',note:'Vacances Toussaint',color:'#8b6235'},
+  {id:'s4',start:'2025-09-06',end:'2025-09-07',qui:'Nous',note:'Premier passage',color:'#b02020'},
+  {id:'s5',start:'2025-10-18',end:'2025-10-20',qui:'Nous · Papa · Maman',note:'Travaux enduit',color:'#c9a84c'},
+];
+const SEED_ENTRIES=[
+  {id:'e1',date:'2025-09-07',duree:'2 jours',title:'Premier passage',comment:'Découverte de la maison. Le torii rouge dans le jardin, la vigne, les pommiers… Beaucoup de potentiel.',qui:'Nous',tags:['maison','jardin'],photos:[],sejourId:'s4'},
+  {id:'e2',date:'2025-10-20',duree:'3 jours',title:'Enduit salon — début',comment:'Le grand mur côté salon. Les poutres nettoyées. Papa a réparé la gouttière nord.',qui:'Nous · Papa · Maman',tags:['bricolage','maison'],photos:[],sejourId:'s5'},
+  {id:'e3',date:'2026-05-04',duree:'4 jours',title:'Week-end de mai',comment:'La vigne repart, le cognassier en fleurs. Première tonte. Repas sous le parasol dimanche.',qui:'Les 4',tags:['jardin','convivial'],photos:[],sejourId:'s1'},
+];
+const SEED_TRAVAUX=[
+  {id:'t1',title:'Finir l\'enduit du salon',detail:'Haut du mur côté brique',lieu:'maison',statut:'en-cours',prio:'normal',sejourId:'s1'},
+  {id:'t2',title:'Traitement des poutres cuisine',detail:'Nettoyer / huiler',lieu:'maison',statut:'a-faire',prio:'normal',sejourId:'s2'},
+  {id:'t3',title:'Robinet buanderie — joint',detail:'Goutte en continu',lieu:'maison',statut:'en-cours',prio:'urgent',sejourId:''},
+  {id:'t4',title:'Clôture côté nord',detail:'3 piquets à remplacer',lieu:'jardin',statut:'a-faire',prio:'normal',sejourId:''},
+  {id:'t5',title:'Récupérateur eau de pluie',detail:'Cuve 500 L minimum',lieu:'jardin',statut:'a-faire',prio:'normal',sejourId:'s2'},
+  {id:'t6',title:'Taille de la vigne',detail:'Fait en octobre 2025',lieu:'jardin',statut:'termine',prio:'normal',sejourId:'s5'},
+];
+const SEED_CHECKLIST={
+  arrivee:[
+    {id:'a1',label:'Ouvrir l\'arrivée d\'eau générale',checks:{}},
+    {id:'a2',label:'Allumer le chauffe-eau',checks:{}},
+    {id:'a3',label:'Ouvrir les volets',checks:{}},
+    {id:'a4',label:'Vérifier le frigo / faire courses',checks:{}},
+    {id:'a5',label:'Allumer le poêle si besoin',checks:{}},
+    {id:'a6',label:'Vérifier la boîte aux lettres',checks:{}},
+  ],
+  depart:[
+    {id:'d1',label:'Fermer l\'arrivée d\'eau',checks:{}},
+    {id:'d2',label:'Vider et débrancher le frigo',checks:{}},
+    {id:'d3',label:'Sortir les poubelles',checks:{}},
+    {id:'d4',label:'Vérifier portes et fenêtres',checks:{}},
+    {id:'d5',label:'Couper l\'électricité hors frigo',checks:{}},
+    {id:'d6',label:'Arroser si canicule',checks:{}},
+  ]
+};
+const SEED_JARDIN={tasks:[
+  {id:'j1',label:'Taille de la vigne',        cat:'taille',     monthStart:2, monthEnd:2},
+  {id:'j2',label:'Palissage pousses vigne',    cat:'entretien',  monthStart:5, monthEnd:6},
+  {id:'j3',label:'Vendange',                   cat:'recolte',    monthStart:9, monthEnd:9},
+  {id:'j4',label:'Cognassier en fleurs',        cat:'observation',monthStart:4, monthEnd:4},
+  {id:'j5',label:'Récolte coings',             cat:'recolte',    monthStart:9, monthEnd:10},
+  {id:'j6',label:'Tailler les rosiers',        cat:'taille',     monthStart:2, monthEnd:3},
+  {id:'j7',label:'Semis sous abri',            cat:'semis',      monthStart:3, monthEnd:4},
+  {id:'j8',label:'Plantation tomates / courges',cat:'semis',     monthStart:5, monthEnd:5},
+  {id:'j9',label:'Tonte régulière',            cat:'entretien',  monthStart:4, monthEnd:10},
+  {id:'j10',label:'Désherber les massifs',      cat:'entretien',  monthStart:4, monthEnd:7},
+  {id:'j11',label:'Arrosage soutenu',           cat:'entretien',  monthStart:6, monthEnd:8},
+  {id:'j12',label:'Récolte légumes potager',   cat:'recolte',    monthStart:6, monthEnd:9},
+  {id:'j13',label:'Plantation bulbes automne', cat:'semis',      monthStart:9, monthEnd:10},
+  {id:'j14',label:'Ramassage des feuilles',    cat:'entretien',  monthStart:10,monthEnd:11},
+  {id:'j15',label:'Rentrer les pots & fragiles',cat:'entretien', monthStart:11,monthEnd:11},
+  {id:'j16',label:'Planifier saison suivante', cat:'observation',monthStart:12,monthEnd:1},
+  {id:'j17',label:'Catalogues & commandes graines',cat:'observation',monthStart:1,monthEnd:2},
+]};
+const DEFAULT_CATS=[
+  {id:'taille',     name:'Taille',      icon:'✂️', bg:'#4a7040'},
+  {id:'semis',      name:'Semis',       icon:'🌱', bg:'#7aab5a'},
+  {id:'recolte',    name:'Récolte',     icon:'🧺', bg:'#d4640a'},
+  {id:'entretien',  name:'Entretien',   icon:'🔨', bg:'#8b6235'},
+  {id:'observation',name:'Observation', icon:'👁️', bg:'#c9a84c'},
+];
+
+const SEED_POIS=[
+  {id:'p1',name:'Forêt de Brocéliande',desc:'Sentiers de randonnée, fontaine de Barenton, val sans retour',cat:'nature',lat:48.0012,lng:-2.2867},
+  {id:'p2',name:'Château de Comper',desc:'Château médiéval au cœur de Brocéliande, centre de l\'imaginaire arthurien',cat:'culture',lat:48.0072,lng:-2.3045},
+  {id:'p3',name:'Lac au Duc (Ploërmel)',desc:'Plage, baignade, kayak, vélo autour du lac',cat:'sport',lat:47.9413,lng:-2.4012},
+  {id:'p4',name:'Mauron',desc:'Bourg voisin — marché, commerces, restaurants',cat:'autre',lat:48.0872,lng:-2.2783},
+  {id:'p5',name:'Concoret',desc:'Village breton pittoresque aux portes de Brocéliande',cat:'culture',lat:48.0323,lng:-2.2645},
+  {id:'p6',name:'Étang de Taupont',desc:'Balade nature, pêche, pique-nique',cat:'nature',lat:47.9945,lng:-2.3234},
+];
+function switchView(v,btn,e){
+  if(e) e.stopPropagation();
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab-main').forEach(x=>x.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  btn.classList.add('active');
+  if(v==='planning')renderYear();
+  if(v==='fil')renderTimeline();
+  if(v==='travaux')renderTravaux();
+  if(v==='jardin')renderGantt();
+  if(v==='coin')renderCoin();
+  if(v==='verger'){}
+  if(v==='check')renderStandaloneCheck();
+}
+window.addEventListener('scroll',()=>document.getElementById('stickyHeader').classList.toggle('scrolled',window.scrollY>8),{passive:true});
+// Expose pour les onclick HTML
+
+/* ═══════════════════════ PLANNING ═══════════════════════ */
+function navYear(d){currentYear+=d;renderYear();}
+
+function renderYear(){
+  document.getElementById('yearLbl').textContent=currentYear;
+  const grid=document.getElementById('yearGrid');
+  grid.innerHTML='';
+  const ys=sejours.filter(s=>s.start.startsWith(currentYear)||s.end.startsWith(currentYear));
+  const nights=ys.reduce((a,s)=>a+Math.round((new Date(s.end)-new Date(s.start))/86400000),0);
+  document.getElementById('planStatus').textContent=ys.length?`${ys.length} séjour${ys.length>1?'s':''} · ${nights} nuit${nights>1?'s':''}` :'Aucun séjour planifié';
+  const MN=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const DH=['L','M','M','J','V','S','D'];
+  for(let m=0;m<12;m++){
+    const mN=ys.reduce((a,s)=>{let n=0,d=new Date(Math.max(new Date(s.start),new Date(currentYear,m,1))),end=new Date(Math.min(new Date(s.end),new Date(currentYear,m+1,0)));while(d<=end){n++;d.setDate(d.getDate()+1);}return a+n;},0);
+    const card=document.createElement('div');card.className='month-card';
+    card.innerHTML=`<div class="month-header"><div class="month-name">${MN[m]}</div><div class="month-nights">${mN?mN+' nuit'+(mN>1?'s':''):''}</div></div><div class="cal-head">${DH.map(d=>`<div class="cal-head-cell">${d}</div>`).join('')}</div><div class="cal-body-wrap"><div class="cal-grid" id="g${m}"></div><div class="cal-bands" id="b${m}"></div></div>`;
+    grid.appendChild(card);buildMonth(m,ys);
+  }
+  renderLegend(ys);
+}
+
+function buildMonth(m,ys){
+  const gEl=document.getElementById('g'+m),bEl=document.getElementById('b'+m);
+  const y=currentYear,first=new Date(y,m,1),last=new Date(y,m+1,0),dow=(first.getDay()+6)%7,tot=last.getDate();
+  const today=new Date();today.setHours(0,0,0,0);
+  let html='';
+  for(let i=0;i<dow;i++)html+=`<div class="cal-cell empty"></div>`;
+  for(let d=1;d<=tot;d++){const dt=new Date(y,m,d);html+=`<div class="cal-cell${dt.getTime()===today.getTime()?' today':''}" data-date="${iso(dt)}" onclick="cellClick(this)"><div class="day-num">${d}</div></div>`;}
+  gEl.innerHTML=html;
+  requestAnimationFrame(()=>{
+    const cells={};gEl.querySelectorAll('.cal-cell:not(.empty)').forEach(c=>cells[c.dataset.date]=c);
+    ys.forEach((sej,idx)=>{
+      let cur=new Date(Math.max(new Date(sej.start),new Date(y,m,1)));
+      const endMo=new Date(Math.min(new Date(sej.end),new Date(y,m+1,0)));
+      while(cur<=endMo){
+        let rowEnd=new Date(cur);
+        while(rowEnd<=endMo&&rowEnd.getDay()!==0)rowEnd.setDate(rowEnd.getDate()+1);
+        if(rowEnd>endMo)rowEnd=new Date(endMo);
+        const sc=cells[iso(cur)],ec=cells[iso(rowEnd)];
+        if(sc&&ec){
+          const sr=sc.getBoundingClientRect(),er=ec.getBoundingClientRect(),wr=bEl.getBoundingClientRect();
+          const continL=cur>new Date(sej.start)&&cur.getDate()>1,continR=rowEnd<new Date(sej.end)&&rowEnd<new Date(y,m+1,0);
+          const isFirst=iso(cur)===sej.start||(cur<=new Date(sej.start)&&cur.getMonth()===new Date(sej.start).getMonth());
+          const band=document.createElement('div');
+          band.className='cal-band'+(continL?' cal-band-continues-left':'')+(continR?' cal-band-continues-right':'');
+          band.style.cssText=`left:${sr.left-wr.left}px;top:${sr.top-wr.top+10}px;width:${er.right-sr.left}px;background:${sej.color||colorFor(idx)}`;
+          band.textContent=(!continL&&isFirst)?(sej.qui||sej.note||''):'';
+          band.title=(sej.qui?sej.qui+' · ':'')+fmtDate(sej.start)+' → '+fmtDate(sej.end)+(sej.note?' — '+sej.note:'');
+          band.onclick=e=>{e.stopPropagation();openSejourPanel(sej.id);};
+          bEl.appendChild(band);
+        }
+        rowEnd.setDate(rowEnd.getDate()+1);cur=new Date(rowEnd);
+      }
+    });
+
+    // Événements locaux — petites pastilles en bas de chaque jour
+    const EVENT_COLORS={fete:'#b02020',marche:'#4a7040',sport:'#d4640a',culture:'#8b6235',autre:'#7a6a50'};
+    events.forEach(ev=>{
+      const evY=ev.start?ev.start.split('-')[0]:null;
+      if(!evY||parseInt(evY)!==y) return;
+      // Trouver toutes les dates dans ce mois
+      const evStart=new Date(ev.start), evEnd=new Date(ev.end||ev.start);
+      let d=new Date(Math.max(evStart,new Date(y,m,1)));
+      const endMo=new Date(Math.min(evEnd,new Date(y,m+1,0)));
+      while(d<=endMo){
+        const cell=cells[iso(d)];
+        if(cell){
+          const dot=document.createElement('div');
+          dot.style.cssText=`position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:${EVENT_COLORS[ev.type]||EVENT_COLORS.autre};z-index:4;cursor:pointer`;
+          dot.title=ev.name+(ev.note?' — '+ev.note:'');
+          dot.onclick=e=>{e.stopPropagation();openEditEvent(ev.id);};
+          cell.appendChild(dot);
+        }
+        d.setDate(d.getDate()+1);
+      }
+    });
+  });
+}
+
+function renderLegend(ys){
+  const leg=document.getElementById('planLegend');
+  if(!ys.length){leg.innerHTML='';return;}
+  leg.innerHTML=ys.map((s,i)=>{
+    const n=Math.round((new Date(s.end)-new Date(s.start))/86400000);
+    return `<div class="legend-item" onclick="openSejourPanel('${s.id}')">
+      <div class="legend-dot" style="background:${s.color||colorFor(i)}"></div>
+      <span>${fmtDate(s.start)} → ${fmtDate(s.end)} · ${n}n${s.qui?' · '+s.qui:''}</span>
+    </div>`;
+  }).join('');
+}
+
+let selStep=0,selStart=null;
+function cellClick(cell){
+  const date=cell.dataset.date;if(!date)return;
+  if(selStep===0){
+    selStep=1;selStart=date;
+    document.getElementById('selectHint').classList.add('show');
+    document.getElementById('shStep').textContent='2/2';
+    document.getElementById('shMsg').innerHTML=`Arrivée : <span class="sh-date">${fmtDate(date)}</span> — cliquez sur le départ`;
+    cell.classList.add('sel-start');
+  }else{
+    const s=date<selStart?date:selStart,e=date<selStart?selStart:date;
+    cancelSel();openNewSejourWithDates(s,e);
+  }
+}
+function cancelSel(){selStep=0;selStart=null;document.getElementById('selectHint').classList.remove('show');document.querySelectorAll('.cal-cell.sel-start,.cal-cell.sel-range').forEach(c=>c.classList.remove('sel-start','sel-range'));}
+
+function startNewSejour(){openNewSejourWithDates('','');}
+function openNewSejourWithDates(s,e){
+  document.getElementById('editSejourId').value='';document.getElementById('modalSejourTitle').textContent='Nouveau séjour';
+  document.getElementById('sejourStart').value=s;document.getElementById('sejourEnd').value=e;
+  document.getElementById('sejourQui').value='';document.getElementById('sejourNote').value='';
+  document.getElementById('btnDelSejour').style.display='none';updateSejourInfo();
+  document.getElementById('modalSejour').classList.add('show');
+}
+function openEditSejour(id){
+  const s=sejours.find(x=>x.id===id);if(!s)return;
+  document.getElementById('editSejourId').value=id;document.getElementById('modalSejourTitle').textContent='Modifier le séjour';
+  document.getElementById('sejourStart').value=s.start;document.getElementById('sejourEnd').value=s.end;
+  document.getElementById('sejourQui').value=s.qui||'';document.getElementById('sejourNote').value=s.note||'';
+  document.getElementById('btnDelSejour').style.display='block';updateSejourInfo();
+  document.getElementById('modalSejour').classList.add('show');
+}
+function updateSejourInfo(){
+  const s=document.getElementById('sejourStart').value,e=document.getElementById('sejourEnd').value,info=document.getElementById('sejourInfo');
+  if(s&&e&&e>=s){const n=Math.round((new Date(e)-new Date(s))/86400000);info.textContent=`${fmtDate(s)} → ${fmtDate(e)} · ${n} nuit${n>1?'s':''}`;info.style.display='block';}
+  else info.style.display='none';
+}
+async function saveSejour(){
+  const id=document.getElementById('editSejourId').value;
+  const sid=id||'s'+Date.now();
+  const s={id:sid,start:document.getElementById('sejourStart').value,end:document.getElementById('sejourEnd').value,qui:document.getElementById('sejourQui').value,note:document.getElementById('sejourNote').value,color:id?(sejours.find(x=>x.id===id)||{}).color:colorFor(sejours.length)};
+  if(!s.start||!s.end){showToast('Veuillez renseigner les dates');return;}
+
+  // Mettre à jour ou créer le séjour
+  if(id){const i=sejours.findIndex(x=>x.id===id);sejours[i]=s;}else sejours.push(s);
+
+  // Synchroniser l'entrée fil rouge liée (même id)
+  const existingEntry=entries.find(x=>x.id===sid);
+  if(existingEntry){
+    // Mettre à jour date/qui si l'entrée existe déjà — on garde titre/commentaire/photos
+    existingEntry.date=s.start;
+    existingEntry.qui=s.qui||existingEntry.qui;
+  } else {
+    // Créer une entrée vierge liée
+    entries.push({
+      id:sid, sejourId:sid,
+      date:s.start,
+      duree: Math.round((new Date(s.end)-new Date(s.start))/86400000)+' jour'+(Math.round((new Date(s.end)-new Date(s.start))/86400000)>1?'s':''),
+      title:s.note||'', comment:'', qui:s.qui||'',
+      tags:[], photos:[]
+    });
+  }
+
+  await Promise.all([fbSave('sejours',sejours), fbSave('entries',entries)]);
+  closeMod('modalSejour');showToast('Séjour enregistré ✓');
+}
+async function deleteSejour(){
+  const id=document.getElementById('editSejourId').value;if(!confirm('Supprimer ce séjour et son fil rouge ?'))return;
+  sejours=sejours.filter(x=>x.id!==id);
+  entries=entries.filter(x=>x.id!==id); // même id = même suppression
+  await Promise.all([fbSave('sejours',sejours), fbSave('entries',entries)]);
+  closeMod('modalSejour');closeSejourPanel();showToast('Séjour supprimé');
+}
+
+/* ═══════════════════════ PANNEAU SÉJOUR ═══════════════════════ */
+function openSejourPanel(id){
+  const s=sejours.find(x=>x.id===id);if(!s)return;
+  activeSejour=s;
+  const n=Math.round((new Date(s.end)-new Date(s.start))/86400000);
+  document.getElementById('spDates').textContent=fmtDate(s.start)+' → '+fmtDate(s.end);
+  document.getElementById('spNights').textContent=n+' nuit'+(n>1?'s':'');
+  document.getElementById('spQui').textContent=s.qui||'';
+  document.getElementById('spNote').textContent=s.note||'';
+  renderSpMoments(s);renderSpTravaux(s);
+  document.getElementById('spBackdrop').classList.add('show');
+  document.getElementById('sejourPanel').classList.add('show');
+  document.getElementById('sejourPanel').scrollTop=0;
+}
+function closeSejourPanel(){
+  document.getElementById('spBackdrop').classList.remove('show');
+  document.getElementById('sejourPanel').classList.remove('show');
+}
+function editCurrentSejour(){if(activeSejour){closeMod('modalSejour');openEditSejour(activeSejour.id);}}
+
+function renderSpMoments(s){
+  const el=document.getElementById('spMoments');
+  const e=entries.find(x=>x.id===s.id);
+  const titre=e?.title||s.note||'';
+  const comment=e?.comment||'';
+  const tags=e?.tags||[];
+  const photos=e?.photos||[];
+  const cfg={jardin:'🌿',bricolage:'🔨',maison:'🏠',convivial:'🍽️'};
+  const tagsH=tags.map(t=>`<span class="sp-moment-tag" style="background:rgba(30,26,18,.07);color:var(--muted)">${cfg[t]||''} ${t}</span>`).join('');
+  const photosH=photos.length
+    ?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:.4rem">${photos.slice(0,4).map(p=>`<div style="width:72px;height:72px;border-radius:5px;background:center/cover no-repeat url('${p.data}');flex-shrink:0"></div>`).join('')}</div>`:'';
+  if(!titre&&!comment&&!photos.length){
+    el.innerHTML=`<div class="sp-empty">Pas encore de récit ni de photos.<br>Cliquez <strong>Enrichir</strong> pour ajouter commentaire et photos.</div>`;
+    return;
+  }
+  el.innerHTML=`<div style="cursor:pointer" onclick="openEditEntry('${s.id}');closeSejourPanel()">
+    ${titre?`<div class="sp-moment-title">${titre}</div>`:''}
+    ${tagsH?`<div class="sp-moment-tags" style="margin:.3rem 0">${tagsH}</div>`:''}
+    ${comment?`<div class="sp-moment-meta" style="margin-top:.3rem">${comment}</div>`:''}
+    ${photosH}
+  </div>`;
+}
+function renderSpTravaux(s){
+  const el=document.getElementById('spTravaux');
+  const linked=travaux.filter(t=>t.sejourId===s.id);
+  if(!linked.length){el.innerHTML=`<div class="sp-empty">Aucun travail lié à ce séjour.</div>`;return;}
+  el.innerHTML=linked.map(t=>{
+    const statCls=t.statut==='termine'?'stat-ok':t.statut==='en-cours'?'stat-encours':'stat-afaire';
+    const statLbl=t.statut==='termine'?'✓ Fait':t.statut==='en-cours'?'En cours':'À faire';
+    return `<div class="sp-travail ${t.statut}" onclick="openEditTravail('${t.id}');closeSejourPanel()">
+      <div class="sp-travail-title">${t.title}</div>
+      <span class="sp-travail-stat ${statCls}">${statLbl}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════ CHECKLIST ═══════════════════════ */
+function switchCL(tab,btn){
+  activeCLTab=tab;
+  document.querySelectorAll('.cl-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');renderChecklist();
+}
+function renderChecklist(){
+  if(!activeSejour)return;
+  const sid=activeSejour.id;
+  const items=checklist[activeCLTab]||[];
+  const done=items.filter(i=>i.checks&&i.checks[sid]).length;
+  const pct=items.length?Math.round(done/items.length*100):0;
+  document.getElementById('clProgressBar').style.width=pct+'%';
+  document.getElementById('checklistEl').innerHTML=items.map(item=>{
+    const checked=!!(item.checks&&item.checks[sid]);
+    return `<li class="cl-item${checked?' checked-item':''}">
+      <div class="cl-checkbox${checked?' checked':''}" onclick="toggleClItem('${item.id}')">${checked?'✓':''}</div>
+      <span class="cl-label">${item.label}</span>
+      <button class="cl-del-btn" onclick="delClItem('${item.id}')">×</button>
+    </li>`;
+  }).join('');
+}
+async function toggleClItem(id){
+  if(!activeSejour)return;
+  const items=checklist[activeCLTab]||[];
+  const item=items.find(i=>i.id===id);if(!item)return;
+  if(!item.checks)item.checks={};
+  item.checks[activeSejour.id]=!item.checks[activeSejour.id];
+  await fbSave('checklist',checklist);renderChecklist();
+}
+async function addClItem(){
+  const inp=document.getElementById('clAddInput');
+  const label=inp.value.trim();if(!label)return;
+  if(!checklist[activeCLTab])checklist[activeCLTab]=[];
+  checklist[activeCLTab].push({id:'c'+Date.now(),label,checks:{}});
+  inp.value='';await fbSave('checklist',checklist);renderChecklist();
+}
+async function delClItem(id){
+  if(!checklist[activeCLTab])return;
+  checklist[activeCLTab]=checklist[activeCLTab].filter(i=>i.id!==id);
+  await fbSave('checklist',checklist);renderChecklist();
+}
+async function resetChecklist(){
+  if(!activeSejour||!confirm('Remettre toutes les cases à zéro pour ce séjour ?'))return;
+  const sid=activeSejour.id;
+  ['arrivee','depart'].forEach(tab=>{(checklist[tab]||[]).forEach(i=>{if(i.checks)i.checks[sid]=false;});});
+  await fbSave('checklist',checklist);renderChecklist();showToast('Checklist remise à zéro');
+}
+
+/* ═══════════════════════ FIL ROUGE ═══════════════════════ */
+let pendingPhotos=[];
+function renderTimeline(){
+  const tl=document.getElementById('timeline');
+  // Le fil rouge = les séjours triés par date desc, enrichis avec leurs données d'entrée
+  const sorted=[...sejours].sort((a,b)=>b.start.localeCompare(a.start));
+  if(!sorted.length){tl.innerHTML=`<div class="empty-state"><div class="empty-icon">📷</div><div class="empty-label">Ajoutez votre premier séjour dans le Planning !</div></div>`;return;}
+  const MO=['jan.','fév.','mars','avr.','mai','juin','juil.','août','sep.','oct.','nov.','déc.'];
+  let html='',curY=null;
+  sorted.forEach(s=>{
+    const y=s.start.split('-')[0];
+    if(y!==curY){curY=y;html+=`<div class="tl-year"><div class="tl-year-label">${y}</div><div class="tl-year-line"></div></div>`;}
+    const[sy,sm,sd]=s.start.split('-');
+    const nights=Math.round((new Date(s.end)-new Date(s.start))/86400000);
+    const duree=nights+' nuit'+(nights>1?'s':'');
+    // Récupérer les données enrichies de l'entrée liée (même id)
+    const e=entries.find(x=>x.id===s.id)||{};
+    const cnt=(e.photos||[]).length,dom=(e.tags||[])[0]||'maison';
+    let photosH=cnt>0
+      ?`<div class="entry-photos">${(e.photos||[]).slice(0,3).map((p,i)=>`<div class="entry-photo" style="background-image:url('${p.data}');background-size:cover;background-position:center">${i===2&&cnt>3?`<div class="entry-more">+${cnt-3}</div>`:''}</div>`).join('')}</div>`
+      :'<div class="entry-photos"><div class="entry-photo">📷</div></div>';
+    const cfg={jardin:{cls:'tag-jardin',ico:'🌿'},bricolage:{cls:'tag-bricolage',ico:'🔨'},maison:{cls:'tag-maison',ico:'🏠'},convivial:{cls:'tag-convivial',ico:'🍽️'}};
+    const tagsH=(e.tags||[]).map(t=>cfg[t]?`<span class="entry-tag ${cfg[t].cls}">${cfg[t].ico} ${t}</span>`:'').join('');
+    const titre=e.title||s.note||'Séjour';
+    html+=`<div class="tl-entry" onclick="openEditEntry('${s.id}')">
+      <div class="te-date"><strong>${parseInt(sd)} ${MO[parseInt(sm)-1]}</strong>${sy}</div>
+      <div class="te-right"><div class="entry-card">
+        <div class="entry-band ${dom}" style="background:${s.color||'var(--torii)'}"></div>
+        ${photosH}
+        <div class="entry-body">
+          ${tagsH?`<div class="entry-tags">${tagsH}</div>`:''}
+          <div class="entry-title">${titre}</div>
+          ${e.comment?`<div class="entry-comment">${e.comment}</div>`:''}
+          <div class="entry-footer">
+            <span class="entry-duree">${duree}</span>
+            ${s.qui?`<span class="entry-who">${s.qui}</span>`:''}
+          </div>
+        </div>
+      </div></div>
+    </div>`;
+  });
+  tl.innerHTML=html;
+}
+function openNewEntry(){
+  // On ne crée plus d'entrée orpheline — on passe par le planning
+  showToast('Créez d\'abord un séjour dans le Planning 📅');
+}
+function openEditEntry(id){
+  // id = id du séjour = id de l'entrée liée
+  const s=sejours.find(x=>x.id===id);if(!s)return;
+  const e=entries.find(x=>x.id===id)||{id,sejourId:id,title:'',comment:'',tags:[],photos:[]};
+  document.getElementById('editEntryId').value=id;
+  document.getElementById('modalEntryTitle').textContent='Enrichir ce séjour';
+  // Afficher les infos du séjour en lecture seule
+  const nights=Math.round((new Date(s.end)-new Date(s.start))/86400000);
+  document.getElementById('entrySejourInfo').textContent=
+    fmtDate(s.start)+' → '+fmtDate(s.end)+' · '+nights+' nuit'+(nights>1?'s':'')+( s.qui?' · '+s.qui:'');
+  document.getElementById('entryTitle').value=e.title||s.note||'';
+  document.getElementById('entryComment').value=e.comment||'';
+  document.querySelectorAll('#entryTags .toggle-pill').forEach(b=>b.classList.toggle('on',(e.tags||[]).includes(b.dataset.tag)));
+  pendingPhotos=[...(e.photos||[])];renderPhotosRow();
+  document.getElementById('btnDelEntry').style.display='none'; // suppression = via planning
+  document.getElementById('modalEntry').classList.add('show');
+}
+function addPhotos(inp){
+  Promise.all(Array.from(inp.files).map(f=>new Promise(res=>{const r=new FileReader();r.onload=e=>res({data:e.target.result,name:f.name});r.readAsDataURL(f);}))).then(ph=>{pendingPhotos=[...pendingPhotos,...ph];renderPhotosRow();});inp.value='';
+}
+function renderPhotosRow(){
+  const row=document.getElementById('photosRow');
+  let h=pendingPhotos.map((p,i)=>`<div class="photo-thumb" style="background-image:url('${p.data}')"><button class="photo-del" onclick="rmPh(${i})">✕</button></div>`).join('');
+  h+=`<label class="photo-add-btn"><span>+</span><input type="file" accept="image/*" multiple style="display:none" onchange="addPhotos(this)"></label>`;
+  row.innerHTML=h;
+}
+function rmPh(i){pendingPhotos.splice(i,1);renderPhotosRow();}
+async function saveEntry(){
+  const id=document.getElementById('editEntryId').value;
+  if(!id)return;
+  const s=sejours.find(x=>x.id===id);
+  const tags=Array.from(document.querySelectorAll('#entryTags .toggle-pill.on')).map(b=>b.dataset.tag);
+  const nights=s?Math.round((new Date(s.end)-new Date(s.start))/86400000):0;
+  const e={
+    id, sejourId:id,
+    date:s?s.start:'',
+    duree:nights+' nuit'+(nights>1?'s':''),
+    qui:s?s.qui:'',
+    title:document.getElementById('entryTitle').value,
+    comment:document.getElementById('entryComment').value,
+    tags, photos:pendingPhotos
+  };
+  const i=entries.findIndex(x=>x.id===id);
+  if(i>=0)entries[i]=e; else entries.push(e);
+  closeMod('modalEntry');await fbSave('entries',entries);renderTimeline();showToast('Séjour enrichi ✓');
+}
+async function deleteEntry(){
+  // Désactivé — la suppression se fait via le planning
+  showToast('Supprimez le séjour depuis le Planning');
+}
+
+/* ═══════════════════════ TRAVAUX ═══════════════════════ */
+function setTF(f,btn){tFilter=f;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));btn.classList.add('active');renderTravaux();}
+function renderTravaux(){
+  const fil=tFilter==='tous'?travaux:travaux.filter(t=>t.statut===tFilter);
+  const ma=fil.filter(t=>t.lieu==='maison'),ja=fil.filter(t=>t.lieu==='jardin');
+  document.getElementById('cnt-m').textContent=ma.length;document.getElementById('cnt-j').textContent=ja.length;
+  document.getElementById('col-m').innerHTML=ma.length?ma.map(tCard).join(''):`<div class="travaux-empty">Aucun travail</div>`;
+  document.getElementById('col-j').innerHTML=ja.length?ja.map(tCard).join(''):`<div class="travaux-empty">Aucun travail</div>`;
+}
+function tCard(t){
+  const cc=t.statut==='termine'?'done':t.statut==='en-cours'?'wip':'';
+  const linkedS=t.sejourId?sejours.find(s=>s.id===t.sejourId):null;
+  const sejourTag=linkedS?`<span class="t-badge" style="background:rgba(30,26,18,.06);color:var(--muted)">📅 ${fmtDate(linkedS.start)}</span>`:'';
+  return `<div class="travail-item ${t.statut}" onclick="openEditTravail('${t.id}')">
+    <div class="t-check ${cc}" onclick="event.stopPropagation();cycleT('${t.id}')">${t.statut==='termine'?'✓':''}</div>
+    <div class="t-body">
+      <div class="t-title">${t.title}</div>
+      ${t.detail?`<div class="t-detail">${t.detail}</div>`:''}
+      <div class="t-meta">
+        ${t.prio==='urgent'?`<span class="t-badge t-urgent">⚡ Urgent</span>`:''}
+        ${t.statut==='en-cours'?`<span class="t-badge t-encours">En cours</span>`:''}
+        ${sejourTag}
+      </div>
+    </div>
+    <button class="t-del" onclick="event.stopPropagation();qDelT('${t.id}')">×</button>
+  </div>`;
+}
+async function cycleT(id){const t=travaux.find(x=>x.id===id);if(!t)return;t.statut={'a-faire':'en-cours','en-cours':'termine','termine':'a-faire'}[t.statut]||'a-faire';await fbSave('travaux',travaux);renderTravaux();}
+async function qDelT(id){if(!confirm('Supprimer ?'))return;travaux=travaux.filter(x=>x.id!==id);await fbSave('travaux',travaux);renderTravaux();showToast('Supprimé');}
+function populateSejourSelect(selectedId){
+  const sel=document.getElementById('travailSejour');if(!sel)return;
+  sel.innerHTML='<option value="">— aucun —</option>'+sejours.map(s=>`<option value="${s.id}"${s.id===selectedId?' selected':''}>${fmtDate(s.start)} ${s.qui?'· '+s.qui:''}</option>`).join('');
+}
+function openNewTravail(){
+  ['editTravailId','travailTitle','travailDetail'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('travailLieu').value='maison';document.getElementById('travailStatut').value='a-faire';document.getElementById('travailPrio').value='normal';
+  document.getElementById('modalTravailTitle').textContent='Nouveau travail';document.getElementById('btnDelTravail').style.display='none';
+  populateSejourSelect();document.getElementById('modalTravail').classList.add('show');
+}
+function openEditTravail(id){
+  const t=travaux.find(x=>x.id===id);if(!t)return;
+  document.getElementById('editTravailId').value=id;document.getElementById('modalTravailTitle').textContent='Modifier ce travail';
+  document.getElementById('travailTitle').value=t.title||'';document.getElementById('travailDetail').value=t.detail||'';
+  document.getElementById('travailLieu').value=t.lieu||'maison';document.getElementById('travailStatut').value=t.statut||'a-faire';document.getElementById('travailPrio').value=t.prio||'normal';
+  document.getElementById('btnDelTravail').style.display='block';populateSejourSelect(t.sejourId);
+  document.getElementById('modalTravail').classList.add('show');
+}
+async function saveTravail(){
+  const id=document.getElementById('editTravailId').value;
+  const t={id:id||'t'+Date.now(),title:document.getElementById('travailTitle').value,detail:document.getElementById('travailDetail').value,lieu:document.getElementById('travailLieu').value,statut:document.getElementById('travailStatut').value,prio:document.getElementById('travailPrio').value,sejourId:document.getElementById('travailSejour').value};
+  if(id){const i=travaux.findIndex(x=>x.id===id);travaux[i]=t;}else travaux.unshift(t);
+  closeMod('modalTravail');await fbSave('travaux',travaux);renderTravaux();showToast('Enregistré ✓');
+}
+async function deleteTravail(){
+  const id=document.getElementById('editTravailId').value;if(!confirm('Supprimer ?'))return;
+  travaux=travaux.filter(x=>x.id!==id);closeMod('modalTravail');await fbSave('travaux',travaux);renderTravaux();showToast('Supprimé');
+}
+
+/* ═══════════════════════ GANTT JARDIN ═══════════════════════ */
+const MN_SHORT=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+const MN_FULL=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+function getCat(id){return ganttCats.find(c=>c.id===id)||{name:id,icon:'🌿',bg:'#4a7040'};}
+function renderCatToggle(selectedCat){
+  document.getElementById('jardinCatToggle').innerHTML=ganttCats.map(c=>
+    `<button class="toggle-pill${c.id===selectedCat?' on':''}" data-cat="${c.id}" onclick="selectJardinCat(this)" style="${c.id===selectedCat?`background:${c.bg};border-color:${c.bg};color:white`:''}">${c.icon} ${c.name}</button>`
+  ).join('');
+}
+
+function migrateJardinData(){
+  if(!jardinData.tasks)return;
+  jardinData.tasks=jardinData.tasks.map(t=>{
+    if(t.monthStart===undefined)return{...t,monthStart:t.month||1,monthEnd:t.month||1,cat:t.color||'entretien'};
+    return t;
+  });
+}
+
+function renderGantt(){
+  const nowM=new Date().getMonth()+1;
+  document.getElementById('ganttMonths').innerHTML=MN_SHORT.map((mn,i)=>
+    `<div class="gantt-month-hd${i+1===nowM?' current-m':''}">${mn}</div>`).join('');
+  const body=document.getElementById('ganttBody');body.innerHTML='';
+  const BAR_H=36,BAR_GAP=10,LANE_PAD=10,BAR_HPAD=4;
+  // BAR_H fixe et généreux pour accommoder 2 lignes sans calcul approximatif
+  ganttCats.forEach(cat=>{
+    const tasks=(jardinData.tasks||[]).filter(t=>(t.cat||'entretien')===cat.id);
+    if(!tasks.length)return;
+    const sorted=[...tasks].sort((a,b)=>a.monthStart-b.monthStart);
+    const laneEnd=[],taskLane={};
+    sorted.forEach(t=>{
+      const ms=t.monthStart||1,me=t.monthEnd||ms;
+      let lane=laneEnd.findIndex(end=>end<ms);
+      if(lane===-1){lane=laneEnd.length;laneEnd.push(0);}
+      laneEnd[lane]=me;taskLane[t.id]=lane;
+    });
+    const nLanes=laneEnd.length,laneH=nLanes*(BAR_H+BAR_GAP)+LANE_PAD*2;
+    const groupEl=document.createElement('div');groupEl.className='gantt-group';
+    groupEl.innerHTML=`<div class="gantt-group-header" onclick="toggleGanttGroup(this)">
+      <span class="gantt-group-icon">${cat.icon}</span>
+      <span class="gantt-group-name">${cat.name}</span>
+      <span class="gantt-group-count">${tasks.length} tâche${tasks.length>1?'s':''}</span>
+      <span class="gantt-group-toggle">▾</span></div>
+      <div class="gantt-group-rows"></div>`;
+    body.appendChild(groupEl);
+    const rowsEl=groupEl.querySelector('.gantt-group-rows');
+    const lane=document.createElement('div');lane.className='gantt-lane';lane.style.height=laneH+'px';
+    for(let m=1;m<=12;m++){const cell=document.createElement('div');cell.className='gantt-cell'+(m===nowM?' current-m-col':'');lane.appendChild(cell);}
+    const barsLayer=document.createElement('div');barsLayer.className='gantt-bars-layer';
+    const nowLine=document.createElement('div');nowLine.className='gantt-now-line';nowLine.style.left=((nowM-0.5)/12*100)+'%';barsLayer.appendChild(nowLine);
+    sorted.forEach(t=>{
+      const ms=Math.max(1,Math.min(12,t.monthStart||1)),me=Math.max(ms,Math.min(12,t.monthEnd||ms));
+      const wraps=t.monthEnd<t.monthStart;
+      const leftPct=((ms-1)/12)*100;
+      const widthPct=wraps?((12-ms+1+(t.monthEnd||1))/12)*100:((me-ms+1)/12)*100;
+      const piste=taskLane[t.id],topPx=LANE_PAD+piste*(BAR_H+BAR_GAP);
+      const bar=document.createElement('div');bar.className='gantt-bar';
+      bar.style.cssText=[
+        `left:calc(${leftPct}% + ${BAR_HPAD}px)`,
+        `width:calc(${widthPct}% - ${BAR_HPAD*2}px)`,
+        `top:${topPx}px`,
+        `height:${BAR_H}px`,
+        `background:${cat.bg}`,
+      ].join(';');
+      bar.textContent=t.label;
+      bar.title=t.label+' · '+MN_SHORT[ms-1]+(me>ms?' → '+MN_SHORT[me-1]:'');
+      bar.onclick=()=>openEditJardinTask(t.id);
+      barsLayer.appendChild(bar);
+    });
+    lane.appendChild(barsLayer);rowsEl.appendChild(lane);
+  });
+}
+function toggleGanttGroup(header){header.closest('.gantt-group').classList.toggle('collapsed');}
+
+function printGantt(){
+  // Injecter la date du jour
+  const now = new Date();
+  const mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  const dateStr = `Imprimé le ${now.getDate()} ${mois[now.getMonth()]} ${now.getFullYear()}`;
+  document.getElementById('print-title-date').textContent = dateStr;
+  // Déplier tous les groupes
+  document.querySelectorAll('.gantt-group.collapsed').forEach(g=>g.classList.remove('collapsed'));
+  setTimeout(()=>window.print(), 150);
+}
+
+/* Gestion catégories */
+function openManageCats(){renderCatsList();document.getElementById('modalCats').classList.add('show');}
+function renderCatsList(){
+  document.getElementById('catsList').innerHTML=ganttCats.map((c)=>`
+    <div style="display:flex;align-items:center;gap:.5rem;padding:.42rem .1rem;border-bottom:1px solid var(--line)">
+      <div style="width:18px;height:18px;border-radius:3px;background:${c.bg};flex-shrink:0"></div>
+      <span style="font-size:.85rem;flex:1">${c.icon} ${c.name}</span>
+      <span style="font-size:.7rem;color:var(--muted)">${(jardinData.tasks||[]).filter(t=>t.cat===c.id).length} tâche(s)</span>
+      <button onclick="editCat('${c.id}')" style="background:none;border:1px solid var(--line-strong);border-radius:3px;padding:.15rem .45rem;font-size:.65rem;color:var(--muted);cursor:pointer">✏️</button>
+      ${ganttCats.length>1?`<button onclick="deleteCat('${c.id}')" style="background:none;border:none;color:var(--muted);font-size:.9rem;cursor:pointer;opacity:.4;padding:.1rem">×</button>`:''}
+    </div>`).join('');
+}
+async function addCat(){
+  const name=document.getElementById('newCatName').value.trim();
+  const icon=document.getElementById('newCatIcon').value.trim()||'🌿';
+  const bg=document.getElementById('newCatColor').value;
+  if(!name){showToast('Saisissez un nom');return;}
+  ganttCats.push({id:'cat_'+Date.now(),name,icon,bg});
+  await fbSave('cats',ganttCats);
+  document.getElementById('newCatName').value='';document.getElementById('newCatIcon').value='';
+  renderCatsList();showToast('Catégorie ajoutée ✓');
+}
+async function deleteCat(id){
+  const used=(jardinData.tasks||[]).filter(t=>t.cat===id).length;
+  if(used&&!confirm(`Cette catégorie contient ${used} tâche(s). Elles seront déplacées dans "entretien". Continuer ?`))return;
+  if(jardinData.tasks)jardinData.tasks=jardinData.tasks.map(t=>t.cat===id?{...t,cat:'entretien'}:t);
+  await fbSave('jardin',jardinData);
+  ganttCats=ganttCats.filter(c=>c.id!==id);
+  await fbSave('cats',ganttCats);renderCatsList();
+}
+async function editCat(id){
+  const c=ganttCats.find(x=>x.id===id);if(!c)return;
+  const name=prompt('Nom :',c.name);if(name===null)return;
+  const icon=prompt('Emoji :',c.icon)||c.icon;
+  c.name=name.trim()||c.name;c.icon=icon.trim()||c.icon;
+  await fbSave('cats',ganttCats);renderCatsList();showToast('Catégorie modifiée ✓');
+}
+
+let editingJardinCat='entretien';
+function openNewJardinTask(){
+  document.getElementById('editJardinId').value='';document.getElementById('modalJardinTitle').textContent='Nouvelle tâche';
+  document.getElementById('jardinLabel').value='';document.getElementById('jardinStart').value='1';document.getElementById('jardinEnd').value='1';
+  document.getElementById('btnDelJardin').style.display='none';
+  editingJardinCat=ganttCats[0]?.id||'entretien';renderCatToggle(editingJardinCat);
+  document.getElementById('modalJardin').classList.add('show');
+}
+function openEditJardinTask(id){
+  const t=(jardinData.tasks||[]).find(x=>x.id===id);if(!t)return;
+  document.getElementById('editJardinId').value=id;document.getElementById('modalJardinTitle').textContent='Modifier la tâche';
+  document.getElementById('jardinLabel').value=t.label||'';document.getElementById('jardinStart').value=t.monthStart||1;document.getElementById('jardinEnd').value=t.monthEnd||1;
+  document.getElementById('btnDelJardin').style.display='block';
+  editingJardinCat=t.cat||ganttCats[0]?.id||'entretien';renderCatToggle(editingJardinCat);
+  document.getElementById('modalJardin').classList.add('show');
+}
+function selectJardinCat(btn){
+  editingJardinCat=btn.dataset.cat;
+  const cat=getCat(editingJardinCat);
+  document.querySelectorAll('#jardinCatToggle .toggle-pill').forEach(b=>{
+    const active=b.dataset.cat===editingJardinCat;
+    b.classList.toggle('on',active);
+    b.style.background=active?cat.bg:'';b.style.borderColor=active?cat.bg:'';b.style.color=active?'white':'';
+  });
+}
+async function saveJardinTask(){
+  const id=document.getElementById('editJardinId').value;
+  const t={id:id||'j'+Date.now(),label:document.getElementById('jardinLabel').value.trim(),cat:editingJardinCat,monthStart:parseInt(document.getElementById('jardinStart').value),monthEnd:parseInt(document.getElementById('jardinEnd').value)};
+  if(!t.label){showToast('Veuillez saisir un nom');return;}
+  if(!jardinData.tasks)jardinData.tasks=[];
+  if(id){const i=jardinData.tasks.findIndex(x=>x.id===id);jardinData.tasks[i]=t;}else jardinData.tasks.push(t);
+  closeMod('modalJardin');await fbSave('jardin',jardinData);renderGantt();showToast('Tâche enregistrée ✓');
+}
+async function deleteJardinTask(){
+  const id=document.getElementById('editJardinId').value;if(!confirm('Supprimer cette tâche ?'))return;
+  jardinData.tasks=(jardinData.tasks||[]).filter(x=>x.id!==id);
+  closeMod('modalJardin');await fbSave('jardin',jardinData);renderGantt();showToast('Tâche supprimée');
+}
+
+/* ═══════════════════════ ÉVÉNEMENTS LOCAUX ═══════════════════════ */
+const EVENT_CFG={fete:{icon:'🎉',label:'Fête'},marche:{icon:'🛒',label:'Marché'},sport:{icon:'🚴',label:'Sport'},culture:{icon:'🎭',label:'Culture'},autre:{icon:'📌',label:'Autre'}};
+const EVENT_COLORS2={fete:'#b02020',marche:'#4a7040',sport:'#d4640a',culture:'#8b6235',autre:'#7a6a50'};
+let editingEventType='autre';
+
+function openNewEvent(){
+  document.getElementById('editEventId').value='';
+  document.getElementById('modalEventTitle').textContent='Nouvel événement';
+  document.getElementById('eventName').value='';
+  document.getElementById('eventStart').value='';
+  document.getElementById('eventEnd').value='';
+  document.getElementById('eventNote').value='';
+  document.getElementById('btnDelEvent').style.display='none';
+  editingEventType='autre';
+  document.querySelectorAll('#eventTypeToggle .toggle-pill').forEach(b=>b.classList.toggle('on',b.dataset.type==='autre'));
+  document.getElementById('modalEvent').classList.add('show');
+}
+function openEditEvent(id){
+  const ev=events.find(x=>x.id===id);if(!ev)return;
+  document.getElementById('editEventId').value=id;
+  document.getElementById('modalEventTitle').textContent='Modifier l\'événement';
+  document.getElementById('eventName').value=ev.name||'';
+  document.getElementById('eventStart').value=ev.start||'';
+  document.getElementById('eventEnd').value=ev.end||'';
+  document.getElementById('eventNote').value=ev.note||'';
+  document.getElementById('btnDelEvent').style.display='block';
+  editingEventType=ev.type||'autre';
+  document.querySelectorAll('#eventTypeToggle .toggle-pill').forEach(b=>b.classList.toggle('on',b.dataset.type===editingEventType));
+  document.getElementById('modalEvent').classList.add('show');
+}
+function selectEventType(btn){
+  editingEventType=btn.dataset.type;
+  document.querySelectorAll('#eventTypeToggle .toggle-pill').forEach(b=>b.classList.toggle('on',b.dataset.type===editingEventType));
+}
+async function saveEvent(){
+  const id=document.getElementById('editEventId').value;
+  const ev={id:id||'ev'+Date.now(),name:document.getElementById('eventName').value.trim(),start:document.getElementById('eventStart').value,end:document.getElementById('eventEnd').value||document.getElementById('eventStart').value,note:document.getElementById('eventNote').value,type:editingEventType};
+  if(!ev.name||!ev.start){showToast('Nom et date requis');return;}
+  if(id){const i=events.findIndex(x=>x.id===id);events[i]=ev;}else events.push(ev);
+  closeMod('modalEvent');await fbSave('events',events);renderYear();showToast('Événement enregistré ✓');
+}
+async function deleteEvent(){
+  const id=document.getElementById('editEventId').value;if(!confirm('Supprimer ?'))return;
+  events=events.filter(x=>x.id!==id);
+  closeMod('modalEvent');await fbSave('events',events);renderYear();showToast('Supprimé');
+}
+
+/* ═══════════════════════ LE COIN — CARTE + POI ═══════════════════════ */
+const POI_CFG={nature:{icon:'🌲',color:'#4a7040'},culture:{icon:'🏰',color:'#8b6235'},resto:{icon:'🍽️',color:'#d4640a'},sport:{icon:'🚴',color:'#b02020'},autre:{icon:'📌',color:'#7a6a50'}};
+let editingPOICat='autre';
+let _map=null, _mapMarkers=[];
+
+function switchCoinTab(tab, btn){
+  document.querySelectorAll('#coinTabMap,#coinTabBroc').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('coinPanelMap').style.display  = tab==='map'  ? '' : 'none';
+  document.getElementById('coinPanelBroc').style.display = tab==='broc' ? '' : 'none';
+  document.getElementById('coinAddBtn').style.display    = tab==='map'  ? '' : 'none';
+  if(tab==='map') renderCoin();
+}
+function openCarteZoom(img){
+  const bd=document.getElementById('carteZoomBackdrop');
+  document.getElementById('carteZoomImg').src=img.src;
+  bd.style.display='flex';
+  document.body.style.overflow='hidden';
+}
+function closeCarteZoom(){
+  document.getElementById('carteZoomBackdrop').style.display='none';
+  document.body.style.overflow='';
+}
+
+
+function renderCoin(){
+  // Légende
+  document.getElementById('coinLegend').innerHTML=Object.entries(POI_CFG).map(([k,v])=>`
+    <div class="coin-legend-item"><div class="coin-legend-dot" style="background:${v.color}"></div>${v.icon} ${k.charAt(0).toUpperCase()+k.slice(1)}</div>`).join('');
+
+  // Carte Leaflet si disponible, sinon SVG fallback
+  if(typeof L !== 'undefined'){
+    _renderLeaflet();
+  } else {
+    _renderSVG();
+  }
+
+  // Grille des lieux
+  const grid=document.getElementById('coinGrid');
+  if(!pois.length){
+    grid.innerHTML=`<div class="empty-state"><div class="empty-icon">🗺️</div><div class="empty-label">Ajoutez des lieux à découvrir autour de Saint-Léry</div></div>`;
+    return;
+  }
+  grid.innerHTML=[...pois].sort((a,b)=>(a.cat||'').localeCompare(b.cat||'')).map(p=>{
+    const cfg=POI_CFG[p.cat||'autre'];
+    return `<div class="poi-card" onclick="openEditPOI('${p.id}')">
+      <div class="poi-icon">${cfg.icon}</div>
+      <div class="poi-body">
+        <div class="poi-name">${p.name}</div>
+        ${p.desc?`<div class="poi-desc">${p.desc}</div>`:''}
+        <div class="poi-cat" style="color:${cfg.color}">${cfg.icon} ${p.cat||'autre'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _renderLeaflet(){
+  const mapEl=document.getElementById('coinMap');
+  if(!_map){
+    _map=L.map(mapEl).setView([48.0903,-2.2551],11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom:18
+    }).addTo(_map);
+    // Marqueur Saint-Léry
+    L.marker([48.0903,-2.2551],{
+      icon:L.divIcon({
+        html:'<div style="font-size:1.6rem;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))">🏡</div>',
+        className:'',iconSize:[28,28],iconAnchor:[14,14]
+      })
+    }).addTo(_map).bindPopup('<b>La ptite maison</b><br>Saint-Léry');
+  }
+  // Nettoyer les marqueurs POI
+  _mapMarkers.forEach(m=>_map.removeLayer(m));
+  _mapMarkers=[];
+  // Ajouter marqueurs POI
+  pois.forEach(p=>{
+    const cfg=POI_CFG[p.cat||'autre'];
+    const m=L.marker([p.lat||48.0903,p.lng||-2.2551],{
+      icon:L.divIcon({
+        html:`<div style="background:white;border:2px solid ${cfg.color};border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 2px 6px rgba(0,0,0,.2);cursor:pointer">${cfg.icon}</div>`,
+        className:'',iconSize:[32,32],iconAnchor:[16,16]
+      })
+    }).addTo(_map)
+      .bindPopup(`<b>${p.name}</b>${p.desc?'<br><small style="color:#666">'+p.desc+'</small>':''}`);
+    m.on('click',()=>{setTimeout(()=>openEditPOI(p.id),400);});
+    _mapMarkers.push(m);
+  });
+  setTimeout(()=>_map.invalidateSize(),150);
+}
+
+function _renderSVG(){
+  // Fallback carte SVG si Leaflet non disponible (aperçu sandbox)
+  const mapEl=document.getElementById('coinMap');
+  const W=mapEl.clientWidth||600, H=350;
+  const pad=0.12;
+  const allPts=[{lat:48.0903,lng:-2.2551},...pois];
+  const bounds={
+    minLat:Math.min(...allPts.map(p=>p.lat))-pad,
+    maxLat:Math.max(...allPts.map(p=>p.lat))+pad,
+    minLng:Math.min(...allPts.map(p=>p.lng))-pad,
+    maxLng:Math.max(...allPts.map(p=>p.lng))+pad,
+  };
+  const toXY=(lat,lng)=>({
+    x:((lng-bounds.minLng)/(bounds.maxLng-bounds.minLng))*W,
+    y:((bounds.maxLat-lat)/(bounds.maxLat-bounds.minLat))*H
+  });
+  const home=toXY(48.0903,-2.2551);
+  let svg=`<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+  <rect width="${W}" height="${H}" fill="#e8f0d8"/>
+  <rect width="${W}" height="${H}" fill="url(#grid)"/>
+  <defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0L0 0 0 40" fill="none" stroke="rgba(74,112,64,.07)" stroke-width="1"/></pattern></defs>
+  <ellipse cx="${W*0.4}" cy="${H*0.45}" rx="${W*0.2}" ry="${H*0.25}" fill="rgba(74,112,64,.1)"/>
+  <path d="M${W*0.02} ${H*0.55} Q${W*0.4} ${H*0.48} ${W*0.98} ${H*0.38}" stroke="#d4b483" stroke-width="3" fill="none"/>
+  <text x="${W/2}" y="${H/2-10}" text-anchor="middle" font-size="12" fill="#888" font-family="Jost,sans-serif" font-style="italic">Carte disponible sur le site en ligne</text>
+  <text x="${W/2}" y="${H/2+8}" text-anchor="middle" font-size="10" fill="#aaa" font-family="Jost,sans-serif">vacherfabien-lang.github.io/ptitemaison</text>`;
+  // Marqueur maison
+  svg+=`<circle cx="${home.x}" cy="${home.y}" r="16" fill="rgba(176,32,32,.15)" stroke="#b02020" stroke-width="2"/>
+  <text x="${home.x}" y="${home.y+5}" text-anchor="middle" font-size="14">🏡</text>
+  <text x="${home.x}" y="${home.y+26}" text-anchor="middle" font-size="9" fill="#b02020" font-weight="700" font-family="Jost,sans-serif">Saint-Léry</text>`;
+  pois.forEach(p=>{
+    const cfg=POI_CFG[p.cat||'autre'];
+    const pos=toXY(p.lat||48.0903,p.lng||-2.2551);
+    svg+=`<g onclick="openEditPOI('${p.id}')" style="cursor:pointer">
+      <circle cx="${pos.x}" cy="${pos.y}" r="14" fill="white" stroke="${cfg.color}" stroke-width="2"/>
+      <text x="${pos.x}" y="${pos.y+5}" text-anchor="middle" font-size="12">${cfg.icon}</text>
+      <text x="${pos.x}" y="${pos.y+24}" text-anchor="middle" font-size="8" fill="${cfg.color}" font-weight="600" font-family="Jost,sans-serif">${p.name.slice(0,12)}</text>
+    </g>`;
+  });
+  svg+='</svg>';
+  mapEl.innerHTML=svg;
+}
+
+function openNewPOI(){
+  document.getElementById('editPOIId').value='';
+  document.getElementById('modalPOITitle').textContent='Nouveau lieu';
+  document.getElementById('poiName').value='';document.getElementById('poiDesc').value='';
+  document.getElementById('poiLat').value='';document.getElementById('poiLng').value='';
+  document.getElementById('btnDelPOI').style.display='none';
+  editingPOICat='autre';
+  document.querySelectorAll('#poiCatToggle .toggle-pill').forEach(b=>b.classList.toggle('on',b.dataset.cat==='autre'));
+  document.getElementById('modalPOI').classList.add('show');
+}
+function openEditPOI(id){
+  const p=pois.find(x=>x.id===id);if(!p)return;
+  document.getElementById('editPOIId').value=id;
+  document.getElementById('modalPOITitle').textContent='Modifier ce lieu';
+  document.getElementById('poiName').value=p.name||'';document.getElementById('poiDesc').value=p.desc||'';
+  document.getElementById('poiLat').value=p.lat||'';document.getElementById('poiLng').value=p.lng||'';
+  document.getElementById('btnDelPOI').style.display='block';
+  editingPOICat=p.cat||'autre';
+  document.querySelectorAll('#poiCatToggle .toggle-pill').forEach(b=>b.classList.toggle('on',b.dataset.cat===editingPOICat));
+  document.getElementById('modalPOI').classList.add('show');
+}
+function selectPOICat(btn){
+  editingPOICat=btn.dataset.cat;
+  document.querySelectorAll('#poiCatToggle .toggle-pill').forEach(b=>b.classList.toggle('on',b.dataset.cat===editingPOICat));
+}
+async function savePOI(){
+  const id=document.getElementById('editPOIId').value;
+  const p={id:id||'p'+Date.now(),name:document.getElementById('poiName').value.trim(),desc:document.getElementById('poiDesc').value.trim(),cat:editingPOICat,lat:parseFloat(document.getElementById('poiLat').value)||48.0903,lng:parseFloat(document.getElementById('poiLng').value)||-2.2551};
+  if(!p.name){showToast('Saisissez un nom');return;}
+  if(id){const i=pois.findIndex(x=>x.id===id);pois[i]=p;}else pois.push(p);
+  closeMod('modalPOI');await fbSave('pois',pois);renderCoin();showToast('Lieu enregistré ✓');
+}
+async function deletePOI(){
+  const id=document.getElementById('editPOIId').value;if(!confirm('Supprimer ce lieu ?'))return;
+  pois=pois.filter(x=>x.id!==id);
+  closeMod('modalPOI');await fbSave('pois',pois);renderCoin();showToast('Supprimé');
+}
+
+/* ═══════════════════════ CHECKLIST PERMANENTE ═══════════════════════ */
+let permCL = {};
+let clEditMode = false;
+let _clPhotoData = null;
+
+const PERM_CL_SEED = {
+  arrivee:[
+    {id:'pa1',label:"Ouvrir l'arrivée d'eau générale",done:false,photo:null},
+    {id:'pa2',label:'Allumer le chauffe-eau',done:false,photo:null},
+    {id:'pa3',label:'Ouvrir les volets',done:false,photo:null},
+    {id:'pa4',label:'Vérifier le frigo / faire courses',done:false,photo:null},
+    {id:'pa5',label:'Allumer le poêle si besoin',done:false,photo:null},
+    {id:'pa6',label:'Vérifier la boîte aux lettres',done:false,photo:null},
+  ],
+  depart:[
+    {id:'pd1',label:"Fermer l'arrivée d'eau",done:false,photo:null},
+    {id:'pd2',label:'Vider et débrancher le frigo',done:false,photo:null},
+    {id:'pd3',label:'Sortir les poubelles',done:false,photo:null},
+    {id:'pd4',label:'Vérifier portes et fenêtres',done:false,photo:null},
+    {id:'pd5',label:"Couper l'électricité hors frigo",done:false,photo:null},
+    {id:'pd6',label:'Arroser si canicule',done:false,photo:null},
+  ]
+};
+
+// Plans épingles
+let planPins = [];
+const PIN_CFG = {
+  eau:  {icon:'💧', color:'#3a7fa5', label:'Eau'},
+  elec: {icon:'⚡', color:'#c9a84c', label:'Élec'},
+  gaz:  {icon:'🔥', color:'#b02020', label:'Gaz/Chauf.'},
+  info: {icon:'ℹ️', color:'#4a7040', label:'Info'},
+};
+let planEditMode = false;
+let editingPinCat = 'eau';
+let pendingPinPos = null;
+
+function renderStandaloneCheck(){
+  if(USE_FB && fbRefs.permcl){
+    fbRefs.permcl.once('value', snap=>{
+      permCL = snap.exists() ? snap.val() : {};
+      if(!permCL.arrivee){ permCL=PERM_CL_SEED; fbSave('permcl',permCL); }
+      _renderPermCLCols();
+    });
+  } else {
+    if(!permCL.arrivee){
+      permCL = LS.get('permcl') || PERM_CL_SEED;
+      if(!LS.get('permcl')) LS.set('permcl',permCL);
+    }
+    _renderPermCLCols();
+  }
+  renderPlanPins();
+}
+
+function _renderPermCLCols(){
+  _renderPermCol('arrivee','checkListA','checkProgressA');
+  _renderPermCol('depart','checkListD','checkProgressD');
+  const btn=document.getElementById('clEditBtn');
+  if(btn) btn.textContent=clEditMode?'✓ Terminer':'✏️ Modifier';
+  ['A','D'].forEach(s=>{
+    const r=document.getElementById('clAddRow'+s);
+    if(r) r.style.display=clEditMode?'flex':'none';
+  });
+}
+
+function _renderPermCol(tab, listId, progressId){
+  const items=permCL[tab]||[];
+  const done=items.filter(i=>i.done).length;
+  const pct=items.length?Math.round(done/items.length*100):0;
+  document.getElementById(progressId).style.width=pct+'%';
+  document.getElementById(listId).innerHTML=items.map((item,idx)=>{
+    const photoH=item.photo?`<img src="${item.photo}" class="cl-item-photo" onclick="zoomClPhoto(this.src)">` :'';
+    const editH=clEditMode?`
+      <div class="cl-reorder-btns">
+        ${idx>0?`<button class="cl-reorder-btn" onclick="movePermCL('${tab}',${idx},-1)">▲</button>`:'<div style="height:21px"></div>'}
+        ${idx<items.length-1?`<button class="cl-reorder-btn" onclick="movePermCL('${tab}',${idx},1)">▼</button>`:'<div style="height:21px"></div>'}
+      </div>
+      <div class="cl-edit-actions">
+        <button class="cl-photo-btn" onclick="openClPhotoModal('${tab}','${item.id}')">📷</button>
+        <button class="cl-del-btn" onclick="delPermCL('${tab}','${item.id}')">×</button>
+      </div>`:'';
+    return `<li class="cl-item${item.done&&!clEditMode?' checked-item':''}">
+      ${clEditMode?'':`<div class="cl-checkbox${item.done?' checked':''}" onclick="togglePermCL('${tab}','${item.id}')">${item.done?'✓':''}</div>`}
+      <div class="cl-item-body">
+        <div class="cl-item-label">${item.label}</div>
+        ${photoH}
+      </div>
+      ${editH}
+    </li>`;
+  }).join('');
+}
+
+function toggleClEditMode(){
+  if(!clEditMode){
+    if(!confirm('Passer en mode modification ?\nLes changements seront visibles par tous.')) return;
+  }
+  clEditMode=!clEditMode;
+  _renderPermCLCols();
+}
+
+function zoomClPhoto(src){
+  const bd=document.getElementById('carteZoomBackdrop');
+  document.getElementById('carteZoomImg').src=src;
+  bd.style.display='flex';
+  document.body.style.overflow='hidden';
+}
+
+async function togglePermCL(tab, id){
+  if(clEditMode) return;
+  const item=(permCL[tab]||[]).find(i=>i.id===id); if(!item) return;
+  item.done=!item.done;
+  await fbSave('permcl',permCL); LS.set('permcl',permCL);
+  _renderPermCLCols();
+}
+
+async function addPermCL(tab){
+  const inp=document.getElementById(tab==='arrivee'?'checkAddA':'checkAddD');
+  const label=inp.value.trim(); if(!label) return;
+  if(!permCL[tab]) permCL[tab]=[];
+  permCL[tab].push({id:'p'+Date.now(),label,done:false,photo:null});
+  inp.value='';
+  await fbSave('permcl',permCL); LS.set('permcl',permCL);
+  _renderPermCLCols();
+}
+
+async function delPermCL(tab, id){
+  if(!confirm('Supprimer cette tâche ?')) return;
+  permCL[tab]=(permCL[tab]||[]).filter(i=>i.id!==id);
+  await fbSave('permcl',permCL); LS.set('permcl',permCL);
+  _renderPermCLCols();
+}
+
+async function movePermCL(tab, idx, dir){
+  const arr=permCL[tab]||[]; if(!arr.length) return;
+  const ni=idx+dir; if(ni<0||ni>=arr.length) return;
+  [arr[idx],arr[ni]]=[arr[ni],arr[idx]];
+  await fbSave('permcl',permCL); LS.set('permcl',permCL);
+  _renderPermCLCols();
+}
+
+async function resetPermCL(tab){
+  if(!confirm('Tout décocher ?')) return;
+  (permCL[tab]||[]).forEach(i=>i.done=false);
+  await fbSave('permcl',permCL); LS.set('permcl',permCL);
+  _renderPermCLCols(); showToast('Décochée ✓');
+}
+
+/* ── Modal photo tâche ── */
+function openClPhotoModal(tab,id){
+  const item=(permCL[tab]||[]).find(i=>i.id===id); if(!item) return;
+  document.getElementById('clPhotoTab').value=tab;
+  document.getElementById('clPhotoId').value=id;
+  document.getElementById('clPhotoLabel').value=item.label||'';
+  _clPhotoData=item.photo||null;
+  _refreshClPhotoPreview();
+  document.getElementById('modalClPhoto').classList.add('show');
+}
+function _refreshClPhotoPreview(){
+  const wrap=document.getElementById('clPhotoPreviewWrap');
+  const btn=document.getElementById('clPhotoClearBtn');
+  if(_clPhotoData){
+    wrap.innerHTML=`<img src="${_clPhotoData}" style="max-width:100%;max-height:160px;border-radius:6px;object-fit:cover;margin-bottom:.3rem">`;
+    btn.style.display='inline';
+  } else { wrap.innerHTML=''; btn.style.display='none'; }
+}
+function previewClPhoto(inp){
+  if(!inp.files[0]) return;
+  const r=new FileReader();
+  r.onload=e=>{ _clPhotoData=e.target.result; _refreshClPhotoPreview(); };
+  r.readAsDataURL(inp.files[0]);
+}
+function clearClPhoto(){ _clPhotoData=null; _refreshClPhotoPreview(); }
+async function saveClPhotoItem(){
+  const tab=document.getElementById('clPhotoTab').value;
+  const id=document.getElementById('clPhotoId').value;
+  const label=document.getElementById('clPhotoLabel').value.trim();
+  const item=(permCL[tab]||[]).find(i=>i.id===id); if(!item) return;
+  if(label) item.label=label;
+  item.photo=_clPhotoData;
+  closeMod('modalClPhoto');
+  await fbSave('permcl',permCL); LS.set('permcl',permCL);
+  _renderPermCLCols(); showToast('Tâche mise à jour ✓');
+}
+
+/* ═══════════════════════ PLAN DE LA MAISON ═══════════════════════ */
+let currentFloor = 'rdc';
+
+function switchFloor(floor, btn){
+  currentFloor = floor;
+  document.querySelectorAll('#floorRdc, #floorEtage').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('planRDC').style.display  = floor==='rdc'   ? '' : 'none';
+  document.getElementById('planETAGE').style.display = floor==='etage' ? '' : 'none';
+  _drawPins();
+}
+
+function togglePlanEdit(){
+  planEditMode = !planEditMode;
+  const plan = document.getElementById('housePlan');
+  const btn = document.getElementById('planEditBtn');
+  const addBtn = document.getElementById('planAddBtn');
+  const hint = document.getElementById('planHint');
+  plan.classList.toggle('edit-mode', planEditMode);
+  btn.textContent = planEditMode ? '✓ Terminer' : '✏️ Modifier';
+  addBtn.style.display = planEditMode ? 'inline-flex' : 'none';
+  hint.style.display = planEditMode ? 'block' : 'none';
+}
+
+function planClick(e){
+  if(!planEditMode) return;
+  // Ignorer si clic sur une épingle ou ses enfants
+  if(e.target.closest('.plan-pin')) return;
+  const plan = document.getElementById('housePlan');
+  const rect = plan.getBoundingClientRect();
+  const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(2);
+  const y = ((e.clientY - rect.top) / rect.height * 100).toFixed(2);
+  openNewPin(x, y);
+}
+
+let _pinsLoaded = false; // charger Firebase une seule fois
+
+function renderPlanPins(){
+  if(_pinsLoaded){
+    // Déjà chargé — juste redessiner sans toucher Firebase
+    _drawPins();
+    return;
+  }
+  if(USE_FB && fbRefs.pins){
+    fbRefs.pins.once('value', snap=>{
+      planPins = snap.exists() ? fbToArr(snap.val()) : [];
+      if(!planPins.length){ planPins=SEED_PINS; fbSave('pins',planPins); }
+      _pinsLoaded = true;
+      _drawPins();
+    });
+  } else {
+    planPins = LS.get('planpins') || SEED_PINS;
+    if(!LS.get('planpins')) LS.set('planpins',planPins);
+    _pinsLoaded = true;
+    _drawPins();
+  }
+}
+
+function _drawPins(){
+  const container = document.getElementById('planPins');
+  const legend = document.getElementById('planLegendEl');
+  const floored = planPins.filter(p=>(p.floor||'rdc')===currentFloor);
+
+  container.innerHTML = floored.map(p=>{
+    const cfg = PIN_CFG[p.cat||'info'];
+    return `<div class="plan-pin" id="pp_${p.id}" data-pid="${p.id}"
+      style="left:${p.x}%;top:${p.y}%"
+      onclick="pinTap(event,'${p.id}')"
+      onmousedown="pinDragStart(event,'${p.id}')"
+      ontouchstart="pinTouchStart(event,'${p.id}')">
+      <div class="plan-pin-bubble pcat-${p.cat||'info'}">${cfg.icon}</div>
+      <div class="plan-pin-tail pcat-${p.cat||'info'}"></div>
+      <div class="plan-pin-label" style="background:${cfg.color}e6">${p.name}</div>
+    </div>`;
+  }).join('');
+
+  const cats = [...new Set(floored.map(p=>p.cat||'info'))];
+  legend.innerHTML = cats.map(c=>{
+    const cfg=PIN_CFG[c]||PIN_CFG.info;
+    const pins=floored.filter(p=>(p.cat||'info')===c);
+    return `<div style="display:flex;align-items:center;gap:.35rem;font-size:.7rem;color:var(--ink-soft)">
+      <div style="width:10px;height:10px;border-radius:50%;background:${cfg.color}"></div>
+      <span>${cfg.icon} ${cfg.label} : ${pins.map(p=>p.name).join(', ')}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ── Drag & Drop épingles ── */
+let _drag = null; // {id, startX, startY, origX, origY, moved}
+
+function pinTap(e, id){
+  e.stopPropagation();
+  // Si on a bougé pendant le drag, ne pas ouvrir la fiche
+  if(_drag && _drag.moved) return;
+  if(!planEditMode) openEditPin(id);
+  else openEditPin(id); // en mode edit aussi on peut modifier
+}
+
+function pinDragStart(e, id){
+  if(e.button !== 0) return; // seulement clic gauche
+  e.stopPropagation(); e.preventDefault();
+  _startDrag(id, e.clientX, e.clientY);
+  document.addEventListener('mousemove', _onDragMove);
+  document.addEventListener('mouseup',   _onDragEnd);
+}
+
+function pinTouchStart(e, id){
+  e.stopPropagation();
+  const t = e.touches[0];
+  _startDrag(id, t.clientX, t.clientY);
+  document.addEventListener('touchmove', _onTouchMove, {passive:false});
+  document.addEventListener('touchend',  _onTouchEnd);
+}
+
+function _startDrag(id, cx, cy){
+  const p = planPins.find(x=>x.id===id); if(!p) return;
+  _drag = {id, startX:cx, startY:cy, origX:parseFloat(p.x), origY:parseFloat(p.y), moved:false};
+  const el = document.getElementById('pp_'+id);
+  if(el) el.style.transition='none';
+}
+
+function _onDragMove(e){ _moveDrag(e.clientX, e.clientY); }
+function _onTouchMove(e){ e.preventDefault(); const t=e.touches[0]; _moveDrag(t.clientX, t.clientY); }
+
+function _moveDrag(cx, cy){
+  if(!_drag) return;
+  const dx = cx - _drag.startX, dy = cy - _drag.startY;
+  if(!_drag.moved && Math.abs(dx)+Math.abs(dy) < 4) return;
+  _drag.moved = true;
+  const plan = document.getElementById('housePlan');
+  const rect = plan.getBoundingClientRect();
+  const newX = Math.max(0, Math.min(100, _drag.origX + dx/rect.width*100));
+  const newY = Math.max(0, Math.min(100, _drag.origY + dy/rect.height*100));
+  const el = document.getElementById('pp_'+_drag.id);
+  if(el){ el.style.left=newX+'%'; el.style.top=newY+'%'; }
+}
+
+function _onDragEnd(e){ _endDrag(e.clientX, e.clientY); document.removeEventListener('mousemove',_onDragMove); document.removeEventListener('mouseup',_onDragEnd); }
+function _onTouchEnd(e){ const t=e.changedTouches[0]; _endDrag(t.clientX,t.clientY); document.removeEventListener('touchmove',_onTouchMove); document.removeEventListener('touchend',_onTouchEnd); }
+
+async function _endDrag(cx, cy){
+  if(!_drag) return;
+  if(_drag.moved){
+    const plan = document.getElementById('housePlan');
+    const rect = plan.getBoundingClientRect();
+    const dx = cx - _drag.startX, dy = cy - _drag.startY;
+    const newX = Math.max(0,Math.min(100, _drag.origX + dx/rect.width*100)).toFixed(2);
+    const newY = Math.max(0,Math.min(100, _drag.origY + dy/rect.height*100)).toFixed(2);
+    const p = planPins.find(x=>x.id===_drag.id);
+    if(p){ p.x=newX; p.y=newY; }
+    LS.set('planpins', planPins); // localStorage en premier, immédiat
+    _pinsLoaded = true;           // ne jamais recharger depuis Firebase
+    await fbSave('pins', planPins);
+    _drawPins();
+    showToast('Position enregistrée ✓');
+  }
+  const el = document.getElementById('pp_'+(_drag?.id));
+  if(el) el.style.transition='';
+  _drag = null;
+}
+
+const SEED_PINS = [
+  {id:'pin1', name:'Arrivée d\'eau générale (AEP)', desc:'Vanne quart de tour — mur bas côté Est, percement prévu par l\'architecte', cat:'eau', x:'82', y:'68', floor:'rdc'},
+  {id:'pin2', name:'Tableau électrique (TGBT)', desc:'Dans le Local Technique — côté Est de la maison', cat:'elec', x:'88', y:'52', floor:'rdc'},
+  {id:'pin3', name:'Chauffe-eau', desc:'Buanderie — vérifier la pression, purger si besoin', cat:'gaz', x:'78', y:'50', floor:'rdc'},
+  {id:'pin4', name:'Descente EU cuisine/étage', desc:'Chute eaux usées WC étage', cat:'eau', x:'60', y:'38', floor:'rdc'},
+  {id:'pin5', name:'Descente EU SDB étage', desc:'Chute eaux usées SDB (future) étage', cat:'eau', x:'65', y:'38', floor:'rdc'},
+  {id:'pin6', name:'Poêle à bois', desc:'Poêle avec tubage sortie haute — alimentation air frais extérieur', cat:'gaz', x:'20', y:'55', floor:'rdc'},
+  {id:'pin7', name:'Coupure eau WC 2', desc:'Robinet d\'arrêt sous l\'alimentation WC 2', cat:'eau', x:'58', y:'28', floor:'etage'},
+];
+
+function openNewPin(x, y){
+  document.getElementById('editPinId').value='';
+  document.getElementById('editPinX').value=x||'50';
+  document.getElementById('editPinY').value=y||'50';
+  document.getElementById('modalPinTitle').textContent='Nouvelle épingle';
+  document.getElementById('pinName').value='';
+  document.getElementById('pinDesc').value='';
+  document.getElementById('btnDelPin').style.display='none';
+  editingPinCat='eau';
+  document.querySelectorAll('#pinCatToggle .toggle-pill').forEach(b=>b.classList.toggle('on',b.dataset.pcat==='eau'));
+  document.getElementById('modalPin').classList.add('show');
+}
+
+function openEditPin(id){
+  const p = planPins.find(x=>x.id===id); if(!p) return;
+  document.getElementById('editPinId').value=id;
+  document.getElementById('editPinX').value=p.x;
+  document.getElementById('editPinY').value=p.y;
+  document.getElementById('modalPinTitle').textContent='Modifier l\'épingle';
+  document.getElementById('pinName').value=p.name||'';
+  document.getElementById('pinDesc').value=p.desc||'';
+  document.getElementById('btnDelPin').style.display='block';
+  editingPinCat=p.cat||'eau';
+  document.querySelectorAll('#pinCatToggle .toggle-pill').forEach(b=>b.classList.toggle('on',b.dataset.pcat===editingPinCat));
+  document.getElementById('modalPin').classList.add('show');
+}
+
+function selectPinCat(btn){
+  editingPinCat=btn.dataset.pcat;
+  document.querySelectorAll('#pinCatToggle .toggle-pill').forEach(b=>b.classList.toggle('on',b.dataset.pcat===editingPinCat));
+}
+
+async function savePin(){
+  const id=document.getElementById('editPinId').value;
+  const p={
+    id:id||'pin'+Date.now(),
+    name:document.getElementById('pinName').value.trim(),
+    desc:document.getElementById('pinDesc').value.trim(),
+    cat:editingPinCat,
+    x:document.getElementById('editPinX').value,
+    y:document.getElementById('editPinY').value,
+    floor:currentFloor,
+  };
+  if(!p.name){showToast('Saisissez un nom');return;}
+  if(id){const i=planPins.findIndex(x=>x.id===id);planPins[i]=p;}else planPins.push(p);
+  _pinsLoaded=true;
+  LS.set('planpins',planPins);
+  closeMod('modalPin'); _drawPins(); showToast('Épingle enregistrée ✓');
+  await fbSave('pins',planPins);
+}
+
+async function deletePin(){
+  const id=document.getElementById('editPinId').value;
+  if(!confirm('Supprimer cette épingle ?'))return;
+  planPins=planPins.filter(x=>x.id!==id);
+  _pinsLoaded=true;
+  LS.set('planpins',planPins);
+  closeMod('modalPin'); _drawPins(); showToast('Supprimée');
+  await fbSave('pins',planPins);
+}
+
+
+/* ═══════════════════════ UTILS ═══════════════════════ */
+function closeMod(id){document.getElementById(id).classList.remove('show');}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('show');}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  if(!msg){t.classList.remove('show');return;}
+  t.textContent=msg;t.classList.add('show');
+  if(msg!=='Chargement…')setTimeout(()=>t.classList.remove('show'),2500);
+}
+function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function fmtDate(s){if(!s)return '';const[y,m,d]=s.split('-');const M=['jan','fév','mars','avr','mai','juin','juil','août','sep','oct','nov','déc'];return `${parseInt(d)} ${M[parseInt(m)-1]} ${y}`;}
+
+/* ── INIT ── */
+initFirebase();
+</script>
+
+</body>
+</html>
